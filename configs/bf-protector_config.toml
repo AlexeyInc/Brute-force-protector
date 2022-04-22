@@ -1,0 +1,12 @@
+[GRPCSERVER]
+host = "localhost"
+port = ":8081"
+network = "tcp"
+
+[STORAGE]
+source = "localhost:6379"
+
+[ATTEMPTSLIMIT]
+loginFreqMin = 2
+passwordFreqMin = 3
+ipFreqMin = 4

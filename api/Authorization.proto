@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package authorization;
+
+option go_package = "github.com/brute-force-protector";
+
+message Login {
+    string login = 1;
+    string password = 2;
+}
+
+message StatusResponse {
+    bool success = 1;
+    string data = 2;
+}
+
+service AuthorizationService {
+    rpc Authorization(Login) returns (StatusResponse) {}
+}
+
