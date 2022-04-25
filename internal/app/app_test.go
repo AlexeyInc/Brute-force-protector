@@ -2,7 +2,6 @@ package protectorapp
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	api "github.com/AlexeyInc/Brute-force-protector/api/protoc"
@@ -34,8 +33,7 @@ type bruteForceLimits struct {
 func TestAuthorization(t *testing.T) {
 	config, err := protectorconfig.NewConfig(configFile)
 	if err != nil {
-		log.Println("can't read config file: " + err.Error())
-		return
+		require.NoError(t, err)
 	}
 
 	storage := memorystorage.New()
@@ -45,10 +43,13 @@ func TestAuthorization(t *testing.T) {
 	app.getIPFromContext = getSenderTestIP
 
 	ctx := context.Background()
-	storage.Seed(ctx,
+	err = storage.Seed(ctx,
 		[]string{constant.WhiteIPsKey, constant.BlackIPsKey},
 		[][]string{getWhiteListIPs(), getBlackListIPs()},
 	)
+	if err != nil {
+		require.NoError(t, err)
+	}
 
 	bruteForceTests := []struct {
 		name       string

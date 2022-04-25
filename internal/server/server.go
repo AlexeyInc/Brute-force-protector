@@ -17,10 +17,10 @@ type Logger interface {
 }
 
 // TODO: remove
-type Server struct {
-	gRPCServer *grpc.Server
-	listener   net.Listener
-}
+// type Server struct {
+// 	gRPCServer *grpc.Server
+// 	listener   net.Listener
+// }
 
 func RunGRPCServer(context context.Context, config protectorconfig.Config, app api.AuthorizationServiceServer) {
 	gRPCServer := grpc.NewServer(

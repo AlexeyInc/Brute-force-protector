@@ -10,7 +10,6 @@ const (
 	_ipLen       = 7
 	_loginLen    = 5
 	_passwordLen = 8
-	_descLen     = 20
 	_alphabet    = "abcdefghijklmnopqrstuvwxyz"
 )
 
