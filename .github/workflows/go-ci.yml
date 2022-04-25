@@ -2,9 +2,9 @@ name: Go test and build pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
 
@@ -21,5 +21,5 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Test
-      run: go test -v ./...
+    - name: Unit tests
+      run: go test -v -count=1 -race -timeout=1m ./...

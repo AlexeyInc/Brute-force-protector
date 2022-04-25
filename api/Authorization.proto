@@ -11,7 +11,7 @@ message Login {
 
 message StatusResponse {
     bool success = 1;
-    string data = 2;
+    string msg = 2;
 }
 
 service AuthorizationService {

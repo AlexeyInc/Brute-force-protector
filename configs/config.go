@@ -23,9 +23,9 @@ type ServerConf struct {
 }
 
 type AttemptLimitConf struct {
-	LoginFreqMin    int
-	PasswordFreqMin int
-	IPFreqMin       int
+	LoginRequestsMinute    int
+	PasswordRequestsMinute int
+	IpRequestsMinute       int
 }
 
 func NewConfig(fullPath string) (config Config, err error) {

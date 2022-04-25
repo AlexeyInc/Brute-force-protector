@@ -9,11 +9,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	_whiteListIPs = "whitelistIPs"
-	_blackListIPs = "blacklistIPs"
-)
-
 type Storage struct {
 	rdb     *redis.Client
 	limiter *redis_rate.Limiter
@@ -46,13 +41,9 @@ func (s *Storage) Close(ctx context.Context) error {
 	return s.rdb.Close()
 }
 
-func (s *Storage) Seed(ctx context.Context) error {
-	// TODO: load whiteblack lists from file
-	err := s.rdb.LPush(ctx, _whiteListIPs, "testWhiteList_1", "testWhiteList_2").Err()
-	if err != nil {
-		return err
-	}
-	err = s.rdb.LPush(ctx, _blackListIPs, "testBlackList_1", "testBlackList_2").Err()
+// TODO: take seed func from memory db
+func (s *Storage) Seed(ctx context.Context, key string, data []string) error {
+	err := s.rdb.LPush(ctx, key, data).Err()
 	if err != nil {
 		return err
 	}
@@ -91,30 +82,44 @@ func (s *Storage) CheckBruteForce(ctx context.Context, key string, requestLimitP
 	}
 }
 
-func (s *Storage) CheckWhiteList(ctx context.Context, ip string) bool {
-	whiteIPs, err := s.rdb.LRange(ctx, _whiteListIPs, 0, -1).Result()
+func (s *Storage) CheckBlackWhiteIPs(ctx context.Context, key string, senderIP string) bool {
+	whiteBlackIPs, err := s.rdb.LRange(ctx, key, 0, -1).Result()
 	if err != nil {
 		fmt.Println("failed during check in white list:", err)
 		return false
 	}
-	for _, whiteIP := range whiteIPs {
-		if whiteIP == ip {
+	for _, ip := range whiteBlackIPs {
+		if ip == senderIP {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *Storage) CheckBlackList(ctx context.Context, ip string) bool {
-	whiteIPs, err := s.rdb.LRange(ctx, _blackListIPs, 0, -1).Result()
-	if err != nil {
-		fmt.Println("failed during check in black list:", err)
-		return false
-	}
-	for _, blackIP := range whiteIPs {
-		if blackIP == ip {
-			return true
-		}
-	}
-	return false
-}
+// func (s *Storage) CheckWhiteList(ctx context.Context, ip string) bool {
+// 	whiteIPs, err := s.rdb.LRange(ctx, constant.WhiteIPsKey, 0, -1).Result()
+// 	if err != nil {
+// 		fmt.Println("failed during check in white list:", err)
+// 		return false
+// 	}
+// 	for _, whiteIP := range whiteIPs {
+// 		if whiteIP == ip {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// func (s *Storage) CheckBlackList(ctx context.Context, ip string) bool {
+// 	whiteIPs, err := s.rdb.LRange(ctx, constant.BlackIPsKey, 0, -1).Result()
+// 	if err != nil {
+// 		fmt.Println("failed during check in black list:", err)
+// 		return false
+// 	}
+// 	for _, blackIP := range whiteIPs {
+// 		if blackIP == ip {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }

@@ -1,4 +1,7 @@
 grpc-gen:
 	cd api; buf generate
 
-.PHONY: grpc-gen
+test:
+	go test -v -count=1 -race -timeout=10s ./internal/app
+
+.PHONY: grpc-gen test
