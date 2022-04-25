@@ -36,8 +36,9 @@ func (ms *MemoryStorage) AddBruteForceLimit(key string, limit int) {
 	ms.Data[key] = limit
 }
 
-func (ms *MemoryStorage) RefreshStorage() {
+func (ms *MemoryStorage) ResetStorage() {
 	ms.Data = make(map[string]int)
+	ContextDoneCh = make(chan struct{})
 }
 
 func (ms *MemoryStorage) CheckBruteForce(context context.Context, key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error) {

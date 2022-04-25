@@ -76,7 +76,7 @@ func (s *Storage) CheckBruteForce(ctx context.Context, key string, requestLimitP
 	}
 	select {
 	case <-ctx.Done():
-		return
+		return // TODO del
 	default:
 		allowCh <- true
 	}

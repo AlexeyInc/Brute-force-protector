@@ -133,52 +133,30 @@ func TestAuthorization(t *testing.T) {
 		})
 	}
 
-	t.Run("handle error during brute force check", func(t *testing.T) {
+	t.Run("handle error during brute-force check", func(t *testing.T) {
 		finalizeApp(app, storage)
 
 		login := &api.Login{
 			Login:    util.RandomLogin(),
 			Password: util.RandomPassword(),
 		}
-		resp, err := app.Authorization(context.Background(), login)
+
+		resp, err := simulateRequestWithContext(app.Authorization, context.Background(), login)
+
 		require.Error(t, err)
 		require.Equal(t, false, resp.Success)
 		require.Equal(t, _bruteForceCheckErr, resp.Msg)
 	})
 }
 
-func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCred, limits bruteForceLimits) {
-	memorystorage.ContextDoneCh = make(chan struct{})
-
-	app.config.AttemptsLimit.IpRequestsMinute = limits.ip
-	app.config.AttemptsLimit.LoginRequestsMinute = limits.login
-	app.config.AttemptsLimit.PasswordRequestsMinute = limits.password
-
-	storage.AddBruteForceLimit(_testIP, limits.ip)
-	storage.AddBruteForceLimit(s.login, limits.login)
-	storage.AddBruteForceLimit(s.password, limits.password)
-}
-
-func finalizeApp(app *App, storage *memorystorage.MemoryStorage) {
-	app.getIPFromContext = getSenderTestIP
-	storage.RefreshStorage()
-}
-
 func extraRequestForBruteFroceCheck(t *testing.T, context context.Context, app *App, login *api.Login) {
 	t.Helper()
 	for i := 0; i < _allowRequestsCount; i++ {
-		simulateRequestContext()
-		resp, err := app.Authorization(context, login)
-		waitEndOfRequest()
-
+		resp, err := simulateRequestWithContext(app.Authorization, context, login)
 		require.NoError(t, err)
 		require.Equal(t, true, resp.Success)
 	}
-
-	simulateRequestContext()
-	resp, err := app.Authorization(context, login)
-	waitEndOfRequest()
-
+	resp, err := simulateRequestWithContext(app.Authorization, context, login)
 	require.NoError(t, err)
 	require.Equal(t, false, resp.Success)
 	require.Equal(t, _limitExceededText, resp.Msg)
@@ -195,12 +173,28 @@ func whiteBlackListCheck(t *testing.T, context context.Context, app *App, login 
 	}
 }
 
-func simulateRequestContext() {
-	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
+func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCred, limits bruteForceLimits) {
+	memorystorage.ContextDoneCh = make(chan struct{})
+
+	app.config.AttemptsLimit.IpRequestsMinute = limits.ip
+	app.config.AttemptsLimit.LoginRequestsMinute = limits.login
+	app.config.AttemptsLimit.PasswordRequestsMinute = limits.password
+
+	storage.AddBruteForceLimit(_testIP, limits.ip)
+	storage.AddBruteForceLimit(s.login, limits.login)
+	storage.AddBruteForceLimit(s.password, limits.password)
 }
 
-func waitEndOfRequest() {
+func finalizeApp(app *App, storage *memorystorage.MemoryStorage) {
+	app.getIPFromContext = getSenderTestIP
+	storage.ResetStorage()
+}
+
+func simulateRequestWithContext(f func(context.Context, *api.Login) (*api.StatusResponse, error), ctx context.Context, login *api.Login) (*api.StatusResponse, error) {
+	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
+	resp, err := f(ctx, login)
 	memorystorage.RequestContextWG.Wait()
+	return resp, err
 }
 
 func getSenderTestIP(context.Context) (string, error) {

@@ -13,6 +13,7 @@ import (
 const (
 	_whiteListIPText    = "sender IP is in whitelist"
 	_blackListIPText    = "sender IP is in black list"
+	_authAllowed        = "authorization allowed"
 	_limitExceededText  = "limit of authorization attempts exceeded"
 	_readPeerFromCtxErr = "can't read peer info from context"
 	_bruteForceCheckErr = "error during brute force check"
@@ -44,17 +45,14 @@ func New(config protectorconfig.Config, storage Storage) *App {
 func (a *App) Authorization(ctx context.Context, login *api.Login) (*api.StatusResponse, error) {
 	senderIP, err := a.getIPFromContext(ctx)
 	if err != nil {
-		return &api.StatusResponse{
-			Success: false,
-			Msg:     _failedParseCxtErr,
-		}, err
+		return reponseModel(false, _failedParseCxtErr, err)
 	}
 
 	if exists := a.storage.CheckBlackWhiteIPs(ctx, constant.WhiteIPsKey, senderIP); exists {
-		return &api.StatusResponse{Success: true, Msg: _whiteListIPText}, nil
+		return reponseModel(true, _whiteListIPText, nil)
 	}
 	if exists := a.storage.CheckBlackWhiteIPs(ctx, constant.BlackIPsKey, senderIP); exists {
-		return &api.StatusResponse{Success: false, Msg: _blackListIPText}, nil
+		return reponseModel(false, _blackListIPText, nil)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -73,20 +71,19 @@ func (a *App) Authorization(ctx context.Context, login *api.Login) (*api.StatusR
 		select {
 		case err := <-errCh:
 			cancel()
-			return &api.StatusResponse{
-				Success: false,
-				Msg:     _bruteForceCheckErr,
-			}, err
+			return reponseModel(false, _bruteForceCheckErr, err)
 		default:
 		}
 
-		res := <-allowAttemptCh
-		if !res {
+		select {
+		case err := <-errCh:
 			cancel()
-			return &api.StatusResponse{
-				Success: false,
-				Msg:     _limitExceededText,
-			}, nil
+			return reponseModel(false, _bruteForceCheckErr, err)
+		case res := <-allowAttemptCh:
+			if !res {
+				cancel()
+				return reponseModel(false, _limitExceededText, nil)
+			}
 		}
 
 		passedChecks++
@@ -94,12 +91,8 @@ func (a *App) Authorization(ctx context.Context, login *api.Login) (*api.StatusR
 			break
 		}
 	}
-
 	cancel()
-
-	return &api.StatusResponse{
-		Success: true,
-	}, nil
+	return reponseModel(true, _authAllowed, nil)
 }
 
 func getIPFromContext(ctx context.Context) (string, error) {
@@ -108,4 +101,11 @@ func getIPFromContext(ctx context.Context) (string, error) {
 		return "", errors.New(_readPeerFromCtxErr)
 	}
 	return p.Addr.String(), nil
+}
+
+func reponseModel(succes bool, msg string, err error) (*api.StatusResponse, error) {
+	return &api.StatusResponse{
+		Success: succes,
+		Msg:     msg,
+	}, err
 }
