@@ -2,108 +2,155 @@ package protectorapp
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	api "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
-	"google.golang.org/grpc/peer"
-)
-
-const (
-	_whiteListIPText    = "sender IP is in whitelist"
-	_blackListIPText    = "sender IP is in black list"
-	_authAllowed        = "authorization allowed"
-	_limitExceededText  = "limit of authorization attempts exceeded"
-	_readPeerFromCtxErr = "can't read peer info from context"
-	_bruteForceCheckErr = "error during brute force check"
-	_failedParseCxtErr  = "failed get IP from context"
 )
 
 type App struct {
-	api.UnimplementedAuthorizationServiceServer
+	api.UnimplementedBruteForceProtectorServiceServer
 
 	storage Storage
 	config  protectorconfig.Config
-	// for unit tests
-	getIPFromContext func(context.Context) (string, error)
 }
 
 type Storage interface {
 	CheckBruteForce(context context.Context, key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error)
-	CheckBlackWhiteIPs(ctx context.Context, key string, senderIP string) bool
+	IsReservedIP(context context.Context, key, ip string) bool
+	ResetBucket(context context.Context, key string) error
+	AddToReservedIPs(context context.Context, key, ip string) error
+	RemoveFromReservedIPs(context context.Context, key, ip string) error
 }
 
 func New(config protectorconfig.Config, storage Storage) *App {
 	return &App{
-		config:           config,
-		storage:          storage,
-		getIPFromContext: getIPFromContext,
+		config:  config,
+		storage: storage,
 	}
 }
 
-func (a *App) Authorization(ctx context.Context, login *api.Login) (*api.StatusResponse, error) {
-	senderIP, err := a.getIPFromContext(ctx)
-	if err != nil {
-		return reponseModel(false, _failedParseCxtErr, err)
+// TODO: add unit test for check empty request model
+func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
+	if !login.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
 	}
 
-	if exists := a.storage.CheckBlackWhiteIPs(ctx, constant.WhiteIPsKey, senderIP); exists {
-		return reponseModel(true, _whiteListIPText, nil)
+	if exists := a.storage.IsReservedIP(ctx, constant.WhiteIPsKey, login.Ip); exists {
+		return responseModel(true, constant.WhiteListIpText, nil)
 	}
-	if exists := a.storage.CheckBlackWhiteIPs(ctx, constant.BlackIPsKey, senderIP); exists {
-		return reponseModel(false, _blackListIPText, nil)
+	if exists := a.storage.IsReservedIP(ctx, constant.BlackIPsKey, login.Ip); exists {
+		return responseModel(false, constant.BlackListIpText, nil)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-
 	allowAttemptCh := make(chan bool)
 	defer close(allowAttemptCh)
 	errCh := make(chan error)
 	defer close(errCh)
 
-	go a.storage.CheckBruteForce(ctx, login.Login, a.config.AttemptsLimit.LoginRequestsMinute, allowAttemptCh, errCh)
-	go a.storage.CheckBruteForce(ctx, login.Password, a.config.AttemptsLimit.PasswordRequestsMinute, allowAttemptCh, errCh)
-	go a.storage.CheckBruteForce(ctx, senderIP, a.config.AttemptsLimit.IpRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx, login.GetLogin(), a.config.AttemptsLimit.LoginRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx, login.GetPassword(), a.config.AttemptsLimit.PasswordRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx, login.GetIp(), a.config.AttemptsLimit.IpRequestsMinute, allowAttemptCh, errCh)
 
 	passedChecks := 0
 	for {
 		select {
 		case err := <-errCh:
 			cancel()
-			return reponseModel(false, _bruteForceCheckErr, err)
+			err = fmt.Errorf("%s: %s", constant.BruteForceCheckErr, err)
+			return responseModel(false, "", err)
 		default:
 		}
 
 		select {
 		case err := <-errCh:
 			cancel()
-			return reponseModel(false, _bruteForceCheckErr, err)
+			err = fmt.Errorf("%s: %s", constant.BruteForceCheckErr, err)
+			return responseModel(false, "", err)
 		case res := <-allowAttemptCh:
 			if !res {
 				cancel()
-				return reponseModel(false, _limitExceededText, nil)
+				return responseModel(false, constant.LimitExceededText, nil)
 			}
 		}
-
 		passedChecks++
 		if passedChecks == constant.AttackTypesCount {
 			break
 		}
 	}
 	cancel()
-	return reponseModel(true, _authAllowed, nil)
+	return responseModel(true, constant.AuthAllowedText, nil)
 }
 
-func getIPFromContext(ctx context.Context) (string, error) {
-	p, ok := peer.FromContext(ctx)
-	if !ok {
-		return "", errors.New(_readPeerFromCtxErr)
+func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) (*api.StatusResponse, error) {
+	if !bucket.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
 	}
-	return p.Addr.String(), nil
+	err := a.storage.ResetBucket(ctx, bucket.Ip)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
+		return responseModel(false, "", err)
+	}
+	err = a.storage.ResetBucket(ctx, bucket.Login)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
+		return responseModel(false, "", err)
+	}
+
+	return responseModel(true, constant.BucketResetText, nil)
 }
 
-func reponseModel(succes bool, msg string, err error) (*api.StatusResponse, error) {
+func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
+	if !subnet.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	}
+	err := a.storage.AddToReservedIPs(ctx, constant.WhiteIPsKey, subnet.Ip)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.WhiteListAddErr, err)
+		return responseModel(false, "", err)
+	}
+	return responseModel(true, constant.WhiteIpAddedText, nil)
+}
+
+func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
+	if !subnet.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	}
+	err := a.storage.RemoveFromReservedIPs(ctx, constant.WhiteIPsKey, subnet.Ip)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.BlackListRemoveErr, err)
+		return responseModel(false, "", err)
+	}
+	return responseModel(true, constant.WhiteIpAddedText, nil)
+}
+
+func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
+	if !subnet.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	}
+	err := a.storage.AddToReservedIPs(ctx, constant.BlackIPsKey, subnet.Ip)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.BlackListAddErr, err)
+		return responseModel(false, "", err)
+	}
+	return responseModel(true, constant.BlackListIpText, nil)
+}
+
+func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
+	if !subnet.IsValid() {
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	}
+	err := a.storage.RemoveFromReservedIPs(ctx, constant.BlackIPsKey, subnet.Ip)
+	if err != nil {
+		err = fmt.Errorf("%s: %s", constant.BlackListRemoveErr, err)
+		return responseModel(false, "", err)
+	}
+	return responseModel(true, constant.BlackIpRemovedText, nil)
+}
+
+func responseModel(succes bool, msg string, err error) (*api.StatusResponse, error) {
 	return &api.StatusResponse{
 		Success: succes,
 		Msg:     msg,

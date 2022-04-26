@@ -14,7 +14,7 @@ import (
 	protectorapp "github.com/AlexeyInc/Brute-force-protector/internal/app"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	grpcserver "github.com/AlexeyInc/Brute-force-protector/internal/server"
-	redisstorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
+	redistorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
 )
 
 var configFile, whiteBlackListFile string // , logFile string
@@ -26,39 +26,26 @@ func init() {
 }
 
 func main() {
-	bCh := make(chan int, 1)
-
-	val := <-bCh
-
-	fmt.Println(val)
 	flag.Parse()
 
 	config, err := protectorconfig.NewConfig(configFile)
-	if err != nil {
-		log.Fatal("can't read config file: " + err.Error())
-	}
+	failOnError(err, "can't read config file")
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	storage := redisstorage.New(config)
+	storage := redistorage.New(config)
 	if err := storage.Connect(ctx); err != nil {
-		fmt.Println("connection to database failed. " + err.Error())
+		fmt.Println("Connection to database failed.", err.Error())
 		cancel()
 		return
 	}
-	fmt.Println("Successfully connected to redis database...")
+	fmt.Println("Successfully connected to redis database!")
 	defer storage.Close(ctx)
 
-	err = storage.Seed(ctx, constant.WhiteIPsKey, byteRowsToStrings(embed.ReadWhiteList()))
+	err = seedDatabase(ctx, storage)
 	if err != nil {
-		fmt.Println("can't seed database." + err.Error())
-		cancel()
-		return
-	}
-	err = storage.Seed(ctx, constant.BlackIPsKey, byteRowsToStrings(embed.ReadBlackList()))
-	if err != nil {
-		fmt.Println("can't seed database." + err.Error())
+		fmt.Println("Can't seed database...", err.Error())
 		cancel()
 		return
 	}
@@ -72,10 +59,29 @@ func main() {
 	fmt.Println("\nAll servers are stopped...")
 }
 
+func seedDatabase(ctx context.Context, storage *redistorage.Storage) error {
+	return storage.Seed(ctx,
+		[]string{
+			constant.WhiteIPsKey,
+			constant.BlackIPsKey,
+		},
+		[][]string{
+			byteRowsToStrings(embed.ReadWhiteList()),
+			byteRowsToStrings(embed.ReadBlackList()),
+		},
+	)
+}
+
 func byteRowsToStrings(fileData []byte) (result []string) {
 	rows := bytes.Split(fileData, []byte{'\n'})
 	for _, w := range rows {
 		result = append(result, string(w))
 	}
 	return
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
 }

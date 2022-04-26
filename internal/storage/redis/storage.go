@@ -1,12 +1,18 @@
-package redisstorage
+package redistorage
 
 import (
+	"errors"
 	"fmt"
 
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redis/redis_rate/v9"
 	"golang.org/x/net/context"
+)
+
+const (
+	_seedDataErr      = "amount of keys not equal to values"
+	_reserveFailedErr = "failed to reserve IP"
 )
 
 type Storage struct {
@@ -42,17 +48,30 @@ func (s *Storage) Close(ctx context.Context) error {
 }
 
 // TODO: take seed func from memory db
-func (s *Storage) Seed(ctx context.Context, key string, data []string) error {
-	err := s.rdb.LPush(ctx, key, data).Err()
-	if err != nil {
-		return err
+// func (s *Storage) Seed(ctx context.Context, key string, data []string) error {
+// 	err := s.rdb.LPush(ctx, key, data).Err()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+func (s *Storage) Seed(ctx context.Context, keys []string, values [][]string) error {
+	if len(keys) != len(values) {
+		return errors.New(_seedDataErr)
+	}
+	for i := 0; i < len(keys); i++ {
+		err := s.rdb.LPush(ctx, keys[i], values[i]).Err()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *Storage) CheckBruteForce(ctx context.Context, key string, requestLimitPerMinutes int, allowCh chan<- bool, errCh chan<- error) {
 	res, err := s.limiter.Allow(ctx, key, redis_rate.PerMinute(requestLimitPerMinutes))
-	if err != nil { //TODO: add test which checks scenario with errors
+	if err != nil {
 		select {
 		case <-ctx.Done():
 			return
@@ -63,7 +82,7 @@ func (s *Storage) CheckBruteForce(ctx context.Context, key string, requestLimitP
 		}
 	}
 
-	fmt.Println("allowed:", res.Allowed > 0, "; "+key+" attempts remaining:", res.Remaining)
+	fmt.Println("allowed:", res.Allowed > 0, "(For", key, "remain", res.Remaining, "attempts)")
 	if res.Allowed == 0 {
 		select {
 		case <-ctx.Done():
@@ -76,16 +95,16 @@ func (s *Storage) CheckBruteForce(ctx context.Context, key string, requestLimitP
 	}
 	select {
 	case <-ctx.Done():
-		return // TODO del
 	default:
 		allowCh <- true
 	}
 }
 
-func (s *Storage) CheckBlackWhiteIPs(ctx context.Context, key string, senderIP string) bool {
+// TODO add error in return param
+func (s *Storage) IsReservedIP(ctx context.Context, key string, senderIP string) bool {
 	whiteBlackIPs, err := s.rdb.LRange(ctx, key, 0, -1).Result()
 	if err != nil {
-		fmt.Println("failed during check in white list:", err)
+		fmt.Println("failed during check in "+key+":", err)
 		return false
 	}
 	for _, ip := range whiteBlackIPs {
@@ -96,30 +115,38 @@ func (s *Storage) CheckBlackWhiteIPs(ctx context.Context, key string, senderIP s
 	return false
 }
 
-// func (s *Storage) CheckWhiteList(ctx context.Context, ip string) bool {
-// 	whiteIPs, err := s.rdb.LRange(ctx, constant.WhiteIPsKey, 0, -1).Result()
-// 	if err != nil {
-// 		fmt.Println("failed during check in white list:", err)
-// 		return false
-// 	}
-// 	for _, whiteIP := range whiteIPs {
-// 		if whiteIP == ip {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
+func (s *Storage) ResetBucket(ctx context.Context, key string) error {
+	return s.limiter.Reset(ctx, key)
+}
 
-// func (s *Storage) CheckBlackList(ctx context.Context, ip string) bool {
-// 	whiteIPs, err := s.rdb.LRange(ctx, constant.BlackIPsKey, 0, -1).Result()
-// 	if err != nil {
-// 		fmt.Println("failed during check in black list:", err)
-// 		return false
-// 	}
-// 	for _, blackIP := range whiteIPs {
-// 		if blackIP == ip {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
+// TODO: add integration test on dublication
+func (s *Storage) AddToReservedIPs(context context.Context, key, ip string) error {
+	reservedIPs, err := s.rdb.LRange(context, key, 0, -1).Result()
+	if err != nil {
+		return fmt.Errorf("%s: %s", _reserveFailedErr, err)
+	}
+	for _, v := range reservedIPs {
+		if v == ip {
+			return fmt.Errorf("IP: %s already reserved", ip)
+		}
+	}
+	return s.rdb.RPush(context, key, ip).Err()
+}
+
+func (s *Storage) RemoveFromReservedIPs(context context.Context, key, ip string) error {
+	reservedIPs, err := s.rdb.LRange(context, key, 0, -1).Result()
+	if err != nil {
+		return fmt.Errorf("%s: %s", _reserveFailedErr, err)
+	}
+	ipIndex := -1
+	for i, v := range reservedIPs {
+		if v == ip {
+			ipIndex = i
+			break
+		}
+	}
+	if ipIndex == -1 {
+		return fmt.Errorf("IP: %s not reserved", ip)
+	}
+	return s.rdb.LRem(context, key, 0, ip).Err()
+}

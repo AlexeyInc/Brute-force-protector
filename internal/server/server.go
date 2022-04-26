@@ -16,18 +16,12 @@ type Logger interface {
 	Error(msg string)
 }
 
-// TODO: remove
-// type Server struct {
-// 	gRPCServer *grpc.Server
-// 	listener   net.Listener
-// }
-
-func RunGRPCServer(context context.Context, config protectorconfig.Config, app api.AuthorizationServiceServer) {
+func RunGRPCServer(context context.Context, config protectorconfig.Config, app api.BruteForceProtectorServiceServer) {
 	gRPCServer := grpc.NewServer(
 	//grpc.UnaryInterceptor(bruteForceProtectorMiddleware()),
 	)
 
-	api.RegisterAuthorizationServiceServer(gRPCServer, app)
+	api.RegisterBruteForceProtectorServiceServer(gRPCServer, app)
 
 	l, err := net.Listen(config.GRPCServer.Network, config.GRPCServer.Host+config.GRPCServer.Port)
 	if err != nil {

@@ -1,5 +1,7 @@
 package protectorapp
 
+// TODO: add test with some shity data and handle errors
+
 import (
 	"context"
 	"testing"
@@ -22,6 +24,7 @@ const (
 type senderCred struct {
 	login    string
 	password string
+	ip       string
 }
 
 type bruteForceLimits struct {
@@ -40,7 +43,6 @@ func TestAuthorization(t *testing.T) {
 	defer storage.Close()
 
 	app := New(config, storage)
-	app.getIPFromContext = getSenderTestIP
 
 	ctx := context.Background()
 	err = storage.Seed(ctx,
@@ -58,7 +60,7 @@ func TestAuthorization(t *testing.T) {
 	}{
 		{
 			name:       "detect brute force on login",
-			senderData: senderCred{util.RandomLogin(), util.RandomPassword()},
+			senderData: senderCred{util.RandomLogin(), util.RandomPassword(), util.RandomIP()},
 			limits: bruteForceLimits{
 				ip:       _allowRequestsCount + 1,
 				login:    _allowRequestsCount,
@@ -66,7 +68,7 @@ func TestAuthorization(t *testing.T) {
 		},
 		{
 			name:       "detect brute force on password",
-			senderData: senderCred{util.RandomLogin(), util.RandomPassword()},
+			senderData: senderCred{util.RandomLogin(), util.RandomPassword(), util.RandomIP()},
 			limits: bruteForceLimits{
 				ip:       _allowRequestsCount + 1,
 				login:    _allowRequestsCount + 1,
@@ -74,7 +76,7 @@ func TestAuthorization(t *testing.T) {
 		},
 		{
 			name:       "detect brute force on ip",
-			senderData: senderCred{util.RandomLogin(), util.RandomPassword()},
+			senderData: senderCred{util.RandomLogin(), util.RandomPassword(), util.RandomIP()},
 			limits: bruteForceLimits{
 				ip:       _allowRequestsCount,
 				login:    _allowRequestsCount + 1,
@@ -86,9 +88,10 @@ func TestAuthorization(t *testing.T) {
 			resetAppContext(app, storage, bftest.senderData, bftest.limits)
 			defer finalizeApp(app, storage)
 
-			testLogin := &api.Login{
+			testLogin := &api.AuthRequest{
 				Login:    bftest.senderData.login,
 				Password: bftest.senderData.password,
+				Ip:       bftest.senderData.ip,
 			}
 			extraRequestForBruteFroceCheck(t, context.Background(), app, testLogin)
 		})
@@ -104,19 +107,17 @@ func TestAuthorization(t *testing.T) {
 	}{
 		{
 			name:           "detect IP from white list",
-			senderData:     senderCred{util.RandomLogin(), util.RandomPassword()},
+			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
 			limits:         bruteForceLimits{_allowRequestsCount, _allowRequestsCount, _allowRequestsCount},
-			senderIP:       randWhiteIP,
 			expectedResult: true,
-			message:        _whiteListIPText,
+			message:        constant.WhiteListIpText,
 		},
 		{
 			name:           "detect IP from black list",
-			senderData:     senderCred{util.RandomLogin(), util.RandomPassword()},
+			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
 			limits:         bruteForceLimits{_allowRequestsCount, _allowRequestsCount, _allowRequestsCount},
-			senderIP:       randBlackIP,
 			expectedResult: false,
-			message:        _blackListIPText,
+			message:        constant.BlackListIpText,
 		},
 	}
 	for _, wbltest := range blackwhiteListTests {
@@ -124,11 +125,10 @@ func TestAuthorization(t *testing.T) {
 			resetAppContext(app, storage, wbltest.senderData, wbltest.limits)
 			defer finalizeApp(app, storage)
 
-			app.getIPFromContext = wbltest.senderIP
-
-			testLogin := &api.Login{
+			testLogin := &api.AuthRequest{
 				Login:    wbltest.senderData.login,
 				Password: wbltest.senderData.password,
+				Ip:       wbltest.senderData.ip,
 			}
 			whiteBlackListCheck(t, ctx, app, testLogin, wbltest.expectedResult, wbltest.message)
 		})
@@ -137,20 +137,21 @@ func TestAuthorization(t *testing.T) {
 	t.Run("handle error during brute-force check", func(t *testing.T) {
 		finalizeApp(app, storage)
 
-		login := &api.Login{
+		login := &api.AuthRequest{
 			Login:    util.RandomLogin(),
 			Password: util.RandomPassword(),
+			Ip:       util.RandomIP(),
 		}
 
 		resp, err := simulateRequestWithContext(app.Authorization, context.Background(), login)
 
 		require.Error(t, err)
 		require.Equal(t, false, resp.Success)
-		require.Equal(t, _bruteForceCheckErr, resp.Msg)
+		require.Equal(t, "", resp.Msg)
 	})
 }
 
-func extraRequestForBruteFroceCheck(t *testing.T, context context.Context, app *App, login *api.Login) {
+func extraRequestForBruteFroceCheck(t *testing.T, context context.Context, app *App, login *api.AuthRequest) {
 	t.Helper()
 	for i := 0; i < _allowRequestsCount; i++ {
 		resp, err := simulateRequestWithContext(app.Authorization, context, login)
@@ -160,10 +161,10 @@ func extraRequestForBruteFroceCheck(t *testing.T, context context.Context, app *
 	resp, err := simulateRequestWithContext(app.Authorization, context, login)
 	require.NoError(t, err)
 	require.Equal(t, false, resp.Success)
-	require.Equal(t, _limitExceededText, resp.Msg)
+	require.Equal(t, constant.LimitExceededText, resp.Msg)
 }
 
-func whiteBlackListCheck(t *testing.T, context context.Context, app *App, login *api.Login, expectedRes bool, expectedMsg string) {
+func whiteBlackListCheck(t *testing.T, context context.Context, app *App, login *api.AuthRequest, expectedRes bool, expectedMsg string) {
 	t.Helper()
 	for i := 0; i < _allowRequestsCount; i++ {
 		resp, err := app.Authorization(context, login)
@@ -181,34 +182,29 @@ func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCre
 	app.config.AttemptsLimit.LoginRequestsMinute = limits.login
 	app.config.AttemptsLimit.PasswordRequestsMinute = limits.password
 
-	storage.AddBruteForceLimit(_testIP, limits.ip)
+	storage.AddBruteForceLimit(s.ip, limits.ip)
 	storage.AddBruteForceLimit(s.login, limits.login)
 	storage.AddBruteForceLimit(s.password, limits.password)
 }
 
 func finalizeApp(app *App, storage *memorystorage.MemoryStorage) {
-	app.getIPFromContext = getSenderTestIP
 	storage.ResetStorage()
 }
 
-func simulateRequestWithContext(f func(context.Context, *api.Login) (*api.StatusResponse, error), ctx context.Context, login *api.Login) (*api.StatusResponse, error) {
+func simulateRequestWithContext(f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error), ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
 	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
 	resp, err := f(ctx, login)
 	memorystorage.RequestContextWG.Wait()
 	return resp, err
 }
 
-func getSenderTestIP(context.Context) (string, error) {
-	return _testIP, nil
-}
-
-func randWhiteIP(context.Context) (string, error) {
+func randWhiteIP() string {
 	whiteIPs := getWhiteListIPs()
-	return whiteIPs[util.RandomIntRange(0, len(whiteIPs)-1)], nil
+	return whiteIPs[util.RandomIntRange(0, len(whiteIPs)-1)]
 }
-func randBlackIP(context.Context) (string, error) {
+func randBlackIP() string {
 	blackIPs := getBlackListIPs()
-	return blackIPs[util.RandomIntRange(0, len(blackIPs)-1)], nil
+	return blackIPs[util.RandomIntRange(0, len(blackIPs)-1)]
 }
 
 func getWhiteListIPs() []string {

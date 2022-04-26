@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package authorization;
+
+option go_package = "github.com/brute-force-protector";
+
+message AuthRequest {
+    string login = 1;
+    string password = 2;
+    string ip = 3;
+}
+
+message ResetBucketRequest {
+    string login = 1;
+    string ip = 2;
+}
+
+message StatusResponse {
+    bool success = 1;
+    string msg = 2;
+}
+
+message SubnetRequest {
+    string ip = 1;
+}
+
+service BruteForceProtectorService {
+    rpc Authorization(AuthRequest) returns (StatusResponse) {}
+    rpc ResetBuckets(ResetBucketRequest) returns (StatusResponse) {}
+    rpc AddBlackListIP(SubnetRequest) returns (StatusResponse) {}
+    rpc DeleteBlackListIP(SubnetRequest) returns (StatusResponse) {}
+    rpc AddWhiteListIP(SubnetRequest) returns (StatusResponse) {}
+    rpc DeleteWhiteListIP(SubnetRequest) returns (StatusResponse) {}
+}

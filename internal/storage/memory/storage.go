@@ -79,7 +79,7 @@ func (ms *MemoryStorage) CheckBruteForce(context context.Context, key string, re
 	}
 }
 
-func (ms *MemoryStorage) CheckBlackWhiteIPs(ctx context.Context, key string, senderIP string) bool {
+func (ms *MemoryStorage) IsReservedIP(ctx context.Context, key string, senderIP string) bool {
 	ips, exists := ms.BlackWhiteIPs[key]
 	if !exists {
 		return false
@@ -100,4 +100,16 @@ func (ms *MemoryStorage) Seed(context context.Context, keys []string, data [][]s
 		ms.BlackWhiteIPs[keys[i]] = data[i]
 	}
 	return nil
+}
+
+func (ms *MemoryStorage) ResetBucket(context context.Context, key string) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (ms *MemoryStorage) AddToReservedIPs(context context.Context, key string, ip string) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (ms *MemoryStorage) RemoveFromReservedIPs(context context.Context, key string, ip string) error {
+	panic("not implemented") // TODO: Implement
 }
