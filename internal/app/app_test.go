@@ -17,7 +17,6 @@ import (
 var configFile = "../../configs/bf-protector_config.toml"
 
 const (
-	_testIP             = "testIP"
 	_allowRequestsCount = 5
 )
 

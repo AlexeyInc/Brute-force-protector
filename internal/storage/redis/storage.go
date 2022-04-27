@@ -116,6 +116,7 @@ func (s *Storage) IsReservedIP(ctx context.Context, key string, senderIP string)
 }
 
 func (s *Storage) ResetBucket(ctx context.Context, key string) error {
+	fmt.Println("Reset for key: ", key)
 	return s.limiter.Reset(ctx, key)
 }
 

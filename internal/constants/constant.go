@@ -24,4 +24,9 @@ const (
 	BlackListAddErr    = "failed to add ip to black list"
 	WhiteListRemoveErr = "failed to remove ip from white list"
 	BlackListRemoveErr = "failed to remove ip from black list"
+	CreateClientErr    = "can't create client"
+	ReadConfigErr      = "can't read config file"
+	DbConnectionErr    = "connection to database failed"
+	DatabaseSeedErr    = "can't seed database"
+	BfProtectorReqErr  = "failed to make request to brute-force-protector service"
 )

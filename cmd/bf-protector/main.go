@@ -29,14 +29,14 @@ func main() {
 	flag.Parse()
 
 	config, err := protectorconfig.NewConfig(configFile)
-	failOnError(err, "can't read config file")
+	failOnError(err, constant.ReadConfigErr)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	storage := redistorage.New(config)
 	if err := storage.Connect(ctx); err != nil {
-		fmt.Println("Connection to database failed.", err.Error())
+		fmt.Println(constant.DbConnectionErr, err.Error())
 		cancel()
 		return
 	}
@@ -45,7 +45,7 @@ func main() {
 
 	err = seedDatabase(ctx, storage)
 	if err != nil {
-		fmt.Println("Can't seed database...", err.Error())
+		fmt.Println(constant.DatabaseSeedErr, err.Error())
 		cancel()
 		return
 	}

@@ -14,10 +14,10 @@ func (model *AuthRequest) IsValid() bool {
 }
 
 func (model *ResetBucketRequest) IsValid() bool {
-	return model.GetIp() == "" &&
-		model.GetLogin() == ""
+	return model.GetIp() != "" &&
+		model.GetLogin() != ""
 }
 
 func (model *SubnetRequest) IsValid() bool {
-	return model.GetIp() == ""
+	return model.GetIp() != ""
 }

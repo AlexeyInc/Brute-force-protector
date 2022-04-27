@@ -3,9 +3,9 @@ module github.com/AlexeyInc/Brute-force-protector
 go 1.17
 
 require (
+	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306
 	google.golang.org/protobuf v1.28.0
 )
 
@@ -14,6 +14,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect

@@ -8,5 +8,5 @@ source = "localhost:6379"
 
 [ATTEMPTSLIMIT]
 loginRequestsMinute = 2
-passwordRequestsMinute = 3
+passwordRequestsMinute = 10
 ipRequestsMinute = 4

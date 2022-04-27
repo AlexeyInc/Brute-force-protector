@@ -10,6 +10,7 @@ type Config struct {
 	Storage       StorageConf
 	GRPCServer    ServerConf
 	AttemptsLimit AttemptLimitConf
+	BfProtector   BfProtectorConf
 }
 
 type StorageConf struct {
@@ -26,6 +27,10 @@ type AttemptLimitConf struct {
 	LoginRequestsMinute    int
 	PasswordRequestsMinute int
 	IpRequestsMinute       int
+}
+
+type BfProtectorConf struct {
+	Host string
 }
 
 func NewConfig(fullPath string) (config Config, err error) {

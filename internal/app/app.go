@@ -88,6 +88,7 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 	if !bucket.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
 	}
+
 	err := a.storage.ResetBucket(ctx, bucket.Ip)
 	if err != nil {
 		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
@@ -98,7 +99,6 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
 		return responseModel(false, "", err)
 	}
-
 	return responseModel(true, constant.BucketResetText, nil)
 }
 
@@ -120,10 +120,10 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	}
 	err := a.storage.RemoveFromReservedIPs(ctx, constant.WhiteIPsKey, subnet.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.BlackListRemoveErr, err)
+		err = fmt.Errorf("%s: %s", constant.WhiteListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.WhiteIpAddedText, nil)
+	return responseModel(true, constant.WhiteIpRemovedText, nil)
 }
 
 func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
