@@ -1,4 +1,4 @@
-package brute_force_protector
+package brute_force_protector //nolint
 
 func (model *AuthRequest) IsValid() bool {
 	if model.GetIp() == "" {

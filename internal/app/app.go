@@ -99,7 +99,7 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 	}
 	err = a.storage.ResetBucket(ctx, bucket.Login)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
+		err = fmt.Errorf("%s: %w", constant.ResetBucketErr, err)
 		return responseModel(false, "", err)
 	}
 	return responseModel(true, constant.BucketResetText, nil)
@@ -111,7 +111,7 @@ func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	}
 	err := a.storage.AddToReservedIPs(ctx, constant.WhiteIPsKey, subnet.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.WhiteListAddErr, err)
+		err = fmt.Errorf("%s: %w", constant.WhiteListAddErr, err)
 		return responseModel(false, "", err)
 	}
 	return responseModel(true, constant.WhiteIPAddedText, nil)
@@ -123,7 +123,7 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	}
 	err := a.storage.RemoveFromReservedIPs(ctx, constant.WhiteIPsKey, subnet.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.WhiteListRemoveErr, err)
+		err = fmt.Errorf("%s: %w", constant.WhiteListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
 	return responseModel(true, constant.WhiteIPRemovedText, nil)
@@ -135,7 +135,7 @@ func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	}
 	err := a.storage.AddToReservedIPs(ctx, constant.BlackIPsKey, subnet.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.BlackListAddErr, err)
+		err = fmt.Errorf("%s: %w", constant.BlackListAddErr, err)
 		return responseModel(false, "", err)
 	}
 	return responseModel(true, constant.BlackListIPText, nil)
@@ -147,7 +147,7 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	}
 	err := a.storage.RemoveFromReservedIPs(ctx, constant.BlackIPsKey, subnet.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.BlackListRemoveErr, err)
+		err = fmt.Errorf("%s: %w", constant.BlackListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
 	return responseModel(true, constant.BlackIPRemovedText, nil)
