@@ -22,7 +22,7 @@ var configFile, whiteBlackListFile string // , logFile string
 func init() {
 	flag.StringVar(&configFile, "config", "../../configs/bf-protector_config.toml", "Path to configuration file")
 	flag.StringVar(&whiteBlackListFile, "lists", "../../assets/", "Path to white/black list files folder")
-	//flag.StringVar(&logFile, "log", "../../log/logs.log", "Path to log file")
+	// flag.StringVar(&logFile, "log", "../../log/logs.log", "Path to log file")
 }
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 
 	storage := redistorage.New(config)
 	if err := storage.Connect(ctx); err != nil {
-		fmt.Println(constant.DbConnectionErr, err.Error())
+		fmt.Println(constant.DBConnectionErr, err.Error())
 		cancel()
 		return
 	}

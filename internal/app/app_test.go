@@ -12,7 +12,6 @@ import (
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	memorystorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/memory"
 	"github.com/AlexeyInc/Brute-force-protector/util"
-	convert "github.com/AlexeyInc/Brute-force-protector/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +44,8 @@ var bruteForceTests = []struct {
 		limits: bruteForceLimits{
 			ip:       _allowRequestsCount + 1,
 			login:    _allowRequestsCount,
-			password: _allowRequestsCount + 1},
+			password: _allowRequestsCount + 1,
+		},
 	},
 	{
 		name:       "detect brute force on password",
@@ -53,7 +53,8 @@ var bruteForceTests = []struct {
 		limits: bruteForceLimits{
 			ip:       _allowRequestsCount + 1,
 			login:    _allowRequestsCount + 1,
-			password: _allowRequestsCount},
+			password: _allowRequestsCount,
+		},
 	},
 	{
 		name:       "detect brute force on ip",
@@ -61,7 +62,8 @@ var bruteForceTests = []struct {
 		limits: bruteForceLimits{
 			ip:       _allowRequestsCount,
 			login:    _allowRequestsCount + 1,
-			password: _allowRequestsCount + 1},
+			password: _allowRequestsCount + 1,
+		},
 	},
 }
 
@@ -77,14 +79,14 @@ var blackwhiteIPsTests = []struct {
 		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
 		limits:         getRequestLimits(_allowRequestsCount),
 		expectedResult: true,
-		message:        constant.WhiteListIpText,
+		message:        constant.WhiteListIPText,
 	},
 	{
 		name:           "detect IP from black list",
 		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
 		limits:         getRequestLimits(_allowRequestsCount),
 		expectedResult: false,
-		message:        constant.BlackListIpText,
+		message:        constant.BlackListIPText,
 	},
 }
 
@@ -100,14 +102,14 @@ var manageWhiteBlackListTest = []struct {
 		senderData:     getRandomAuthData(),
 		limits:         getRequestLimits(_allowRequestsCount),
 		expectedResult: true,
-		message:        constant.WhiteListIpText,
+		message:        constant.WhiteListIPText,
 	},
 	{
 		name:           "black list add operation/remove operation",
 		senderData:     getRandomAuthData(),
 		limits:         getRequestLimits(_allowRequestsCount),
 		expectedResult: false,
-		message:        constant.BlackListIpText,
+		message:        constant.BlackListIPText,
 	},
 }
 
@@ -122,7 +124,8 @@ var resetBucketTest = []struct {
 		limits: bruteForceLimits{
 			ip:       _allowRequestsCount,
 			login:    _allowRequestsCount + 1,
-			password: _allowRequestsCount + 2},
+			password: _allowRequestsCount + 2,
+		},
 	},
 	{
 		name:       "login bucket reset",
@@ -130,7 +133,8 @@ var resetBucketTest = []struct {
 		limits: bruteForceLimits{
 			ip:       _allowRequestsCount + 1,
 			login:    _allowRequestsCount,
-			password: _allowRequestsCount + 2},
+			password: _allowRequestsCount + 2,
+		},
 	},
 }
 
@@ -209,7 +213,7 @@ func TestAuthorization(t *testing.T) {
 			resp, err := simulateRequestWithContext(app.Authorization, ctx, login)
 			require.NoError(t, err)
 			require.Equal(t, true, resp.Success)
-			require.Equal(t, constant.WhiteListIpText, resp.Msg)
+			require.Equal(t, constant.WhiteListIPText, resp.Msg)
 
 			err = app.storage.RemoveFromReservedIPs(ctx, constant.WhiteIPsKey, wbltest.senderData.ip)
 			require.NoError(t, err)
@@ -269,7 +273,8 @@ func TestAuthorization(t *testing.T) {
 	})
 }
 
-func makeExtraRequestForBruteFroce(t *testing.T, context context.Context, app *App, authData *api.AuthRequest, requestCount int) (*api.StatusResponse, error) {
+func makeExtraRequestForBruteFroce(t *testing.T,
+	context context.Context, app *App, authData *api.AuthRequest, requestCount int) (*api.StatusResponse, error) {
 	t.Helper()
 	for i := 0; i < requestCount; i++ {
 		resp, err := simulateRequestWithContext(app.Authorization, context, authData)
@@ -282,7 +287,7 @@ func makeExtraRequestForBruteFroce(t *testing.T, context context.Context, app *A
 func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCred, limits bruteForceLimits) {
 	memorystorage.ContextDoneCh = make(chan struct{})
 
-	app.config.AttemptsLimit.IpRequestsMinute = limits.ip
+	app.config.AttemptsLimit.IPRequestsMinute = limits.ip
 	app.config.AttemptsLimit.LoginRequestsMinute = limits.login
 	app.config.AttemptsLimit.PasswordRequestsMinute = limits.password
 
@@ -296,7 +301,8 @@ func finalizeApp(app *App, storage *memorystorage.MemoryStorage) {
 	storage.ResetDoneContext()
 }
 
-func simulateRequestWithContext(f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error), ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
+func simulateRequestWithContext(f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error),
+	ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
 	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
 	resp, err := f(ctx, login)
 	memorystorage.RequestContextWG.Wait()
@@ -313,17 +319,18 @@ func getRequestLimits(limit int) bruteForceLimits {
 
 func randWhiteIP() string {
 	whiteIPs := getWhiteListIPs()
-	return whiteIPs[util.RandomIntRange(0, len(whiteIPs)-1)]
+	return whiteIPs[util.RandomIntRange(0, int64(len(whiteIPs)-1))]
 }
+
 func randBlackIP() string {
 	blackIPs := getBlackListIPs()
-	return blackIPs[util.RandomIntRange(0, len(blackIPs)-1)]
+	return blackIPs[util.RandomIntRange(0, int64(len(blackIPs)-1))]
 }
 
 func getWhiteListIPs() []string {
-	return convert.ByteRowsToStrings(embed.ReadWhiteList())
+	return util.ByteRowsToStrings(embed.ReadWhiteList())
 }
 
 func getBlackListIPs() []string {
-	return convert.ByteRowsToStrings(embed.ReadBlackList())
+	return util.ByteRowsToStrings(embed.ReadBlackList())
 }

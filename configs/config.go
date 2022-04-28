@@ -26,7 +26,7 @@ type ServerConf struct {
 type AttemptLimitConf struct {
 	LoginRequestsMinute    int
 	PasswordRequestsMinute int
-	IpRequestsMinute       int
+	IPRequestsMinute       int
 }
 
 type BfProtectorConf struct {

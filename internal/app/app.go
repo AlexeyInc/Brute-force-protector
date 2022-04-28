@@ -31,17 +31,17 @@ func New(config protectorconfig.Config, storage Storage) *App {
 	}
 }
 
-// TODO: add unit test for check empty request model
+// TODO: add unit test for check empty request model.
 func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
 	if !login.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
 	}
 
 	if exists := a.storage.IsReservedIP(ctx, constant.WhiteIPsKey, login.Ip); exists {
-		return responseModel(true, constant.WhiteListIpText, nil)
+		return responseModel(true, constant.WhiteListIPText, nil)
 	}
 	if exists := a.storage.IsReservedIP(ctx, constant.BlackIPsKey, login.Ip); exists {
-		return responseModel(false, constant.BlackListIpText, nil)
+		return responseModel(false, constant.BlackListIPText, nil)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -50,16 +50,19 @@ func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.S
 	errCh := make(chan error)
 	defer close(errCh)
 
-	go a.storage.CheckBruteForce(ctx, login.GetLogin(), a.config.AttemptsLimit.LoginRequestsMinute, allowAttemptCh, errCh)
-	go a.storage.CheckBruteForce(ctx, login.GetPassword(), a.config.AttemptsLimit.PasswordRequestsMinute, allowAttemptCh, errCh)
-	go a.storage.CheckBruteForce(ctx, login.GetIp(), a.config.AttemptsLimit.IpRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx,
+		login.GetLogin(), a.config.AttemptsLimit.LoginRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx,
+		login.GetPassword(), a.config.AttemptsLimit.PasswordRequestsMinute, allowAttemptCh, errCh)
+	go a.storage.CheckBruteForce(ctx,
+		login.GetIp(), a.config.AttemptsLimit.IPRequestsMinute, allowAttemptCh, errCh)
 
 	passedChecks := 0
 	for {
 		select {
 		case err := <-errCh:
 			cancel()
-			err = fmt.Errorf("%s: %s", constant.BruteForceCheckErr, err)
+			err = fmt.Errorf("%s: %w", constant.BruteForceCheckErr, err)
 			return responseModel(false, "", err)
 		default:
 		}
@@ -67,7 +70,7 @@ func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.S
 		select {
 		case err := <-errCh:
 			cancel()
-			err = fmt.Errorf("%s: %s", constant.BruteForceCheckErr, err)
+			err = fmt.Errorf("%s: %w", constant.BruteForceCheckErr, err)
 			return responseModel(false, "", err)
 		case res := <-allowAttemptCh:
 			if !res {
@@ -91,7 +94,7 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 
 	err := a.storage.ResetBucket(ctx, bucket.Ip)
 	if err != nil {
-		err = fmt.Errorf("%s: %s", constant.ResetBucketErr, err)
+		err = fmt.Errorf("%s: %w", constant.ResetBucketErr, err)
 		return responseModel(false, "", err)
 	}
 	err = a.storage.ResetBucket(ctx, bucket.Login)
@@ -111,7 +114,7 @@ func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 		err = fmt.Errorf("%s: %s", constant.WhiteListAddErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.WhiteIpAddedText, nil)
+	return responseModel(true, constant.WhiteIPAddedText, nil)
 }
 
 func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
@@ -123,7 +126,7 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 		err = fmt.Errorf("%s: %s", constant.WhiteListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.WhiteIpRemovedText, nil)
+	return responseModel(true, constant.WhiteIPRemovedText, nil)
 }
 
 func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
@@ -135,7 +138,7 @@ func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 		err = fmt.Errorf("%s: %s", constant.BlackListAddErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.BlackListIpText, nil)
+	return responseModel(true, constant.BlackListIPText, nil)
 }
 
 func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
@@ -147,7 +150,7 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 		err = fmt.Errorf("%s: %s", constant.BlackListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.BlackIpRemovedText, nil)
+	return responseModel(true, constant.BlackIPRemovedText, nil)
 }
 
 func responseModel(succes bool, msg string, err error) (*api.StatusResponse, error) {

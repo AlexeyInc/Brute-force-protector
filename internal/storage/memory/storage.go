@@ -21,7 +21,7 @@ type MemoryStorage struct {
 
 var ContextDoneCh = make(chan struct{})
 
-//TODO: upload from assets seed
+// TODO: upload from assets seed
 
 func New(conf bfprotectorconfig.Config) *MemoryStorage {
 	return &MemoryStorage{
@@ -49,13 +49,13 @@ func (ms *MemoryStorage) ResetDoneContext() {
 	ContextDoneCh = make(chan struct{})
 }
 
-func (ms *MemoryStorage) CheckBruteForce(context context.Context, key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error) {
+func (ms *MemoryStorage) CheckBruteForce(context context.Context,
+	key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error) {
 	ms.mutex.Lock()
 	defer RequestContextWG.Done()
 	defer ms.mutex.Unlock()
 
-	_, exists := ms.Bucket[key]
-	if !exists {
+	if _, exists := ms.Bucket[key]; !exists {
 		select {
 		case <-ContextDoneCh:
 			return
@@ -124,7 +124,7 @@ func (ms *MemoryStorage) ResetBucket(context context.Context, key string) (err e
 		ms.Bucket[key] = ms.config.AttemptsLimit.LoginRequestsMinute
 	}
 	if strings.HasSuffix(key, "_IP") {
-		ms.Bucket[key] = ms.config.AttemptsLimit.IpRequestsMinute
+		ms.Bucket[key] = ms.config.AttemptsLimit.IPRequestsMinute
 	}
 	ms.ResetDoneContext()
 	return

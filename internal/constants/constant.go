@@ -6,13 +6,13 @@ const (
 	WhiteIPsKey = "whiteListIPs"
 	BlackIPsKey = "blackListIPs"
 
-	WhiteIpAddedText   = "ip added to white list"
-	WhiteIpRemovedText = "ip removed from white list"
-	BlackIpAddedText   = "ip added to black list"
-	BlackIpRemovedText = "ip removed from black list"
+	WhiteIPAddedText   = "ip added to white list"
+	WhiteIPRemovedText = "ip removed from white list"
+	BlackIPAddedText   = "ip added to black list"
+	BlackIPRemovedText = "ip removed from black list"
 	BucketResetText    = "bucket(s) successfully reset"
-	WhiteListIpText    = "sender ip is in whitelist"
-	BlackListIpText    = "sender ip is in black list"
+	WhiteListIPText    = "sender ip is in whitelist"
+	BlackListIPText    = "sender ip is in black list"
 	AuthAllowedText    = "authorization allowed"
 	LimitExceededText  = "limit of authorization attempts exceeded"
 
@@ -26,7 +26,7 @@ const (
 	BlackListRemoveErr = "failed to remove ip from black list"
 	CreateClientErr    = "can't create client"
 	ReadConfigErr      = "can't read config file"
-	DbConnectionErr    = "connection to database failed"
+	DBConnectionErr    = "connection to database failed"
 	DatabaseSeedErr    = "can't seed database"
 	BfProtectorReqErr  = "failed to make request to brute-force-protector service"
 )

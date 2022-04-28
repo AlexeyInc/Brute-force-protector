@@ -8,13 +8,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-
-	// "google.golang.org/grpc"
-	// bfprotector "github.com/AlexeyInc/Brute-force-protector/api/protoc"
+	// bfprotector "github.com/AlexeyInc/Brute-force-protector/api/protoc"...
 	cliconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 var cfgFile string
@@ -41,8 +39,7 @@ What you can do:
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -50,7 +47,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "../configs/cli_config.toml", "config file default path '../configs/cli_config.toml'")
+	rootCmd.PersistentFlags().StringVar(
+		&cfgFile, "config", "../configs/cli_config.toml", "config file default path '../configs/cli_config.toml'")
 }
 
 func initConfig() {
