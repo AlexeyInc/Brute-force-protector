@@ -60,7 +60,8 @@ func (s *Storage) Seed(ctx context.Context, keys []string, values [][]string) er
 }
 
 func (s *Storage) CheckBruteForce(ctx context.Context,
-	key string, requestLimitPerMinutes int, allowCh chan<- bool, errCh chan<- error) {
+	key string, requestLimitPerMinutes int, allowCh chan<- bool, errCh chan<- error,
+) {
 	res, err := s.limiter.Allow(ctx, key, redis_rate.PerMinute(requestLimitPerMinutes))
 	if err != nil {
 		select {

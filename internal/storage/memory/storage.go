@@ -50,7 +50,8 @@ func (ms *MemoryStorage) ResetDoneContext() {
 }
 
 func (ms *MemoryStorage) CheckBruteForce(context context.Context,
-	key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error) {
+	key string, requestLimitPerMinutes int, allow chan<- bool, err chan<- error,
+) {
 	ms.mutex.Lock()
 	defer RequestContextWG.Done()
 	defer ms.mutex.Unlock()

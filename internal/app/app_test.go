@@ -274,7 +274,8 @@ func TestAuthorization(t *testing.T) {
 }
 
 func makeExtraRequestForBruteFroce(context context.Context, t *testing.T,
-	app *App, authData *api.AuthRequest, requestCount int) (*api.StatusResponse, error) {
+	app *App, authData *api.AuthRequest, requestCount int,
+) (*api.StatusResponse, error) {
 	t.Helper()
 	for i := 0; i < requestCount; i++ {
 		resp, err := simulateRequestWithContext(context, app.Authorization, authData)
@@ -303,7 +304,8 @@ func finalizeApp(storage *memorystorage.MemoryStorage) {
 
 func simulateRequestWithContext(ctx context.Context,
 	f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error),
-	login *api.AuthRequest) (*api.StatusResponse, error) {
+	login *api.AuthRequest,
+) (*api.StatusResponse, error) {
 	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
 	resp, err := f(ctx, login)
 	memorystorage.RequestContextWG.Wait()
