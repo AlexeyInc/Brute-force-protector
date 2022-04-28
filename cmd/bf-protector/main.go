@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	grpcserver "github.com/AlexeyInc/Brute-force-protector/internal/server"
 	redistorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
+	convert "github.com/AlexeyInc/Brute-force-protector/util"
 )
 
 var configFile, whiteBlackListFile string // , logFile string
@@ -66,18 +66,10 @@ func seedDatabase(ctx context.Context, storage *redistorage.Storage) error {
 			constant.BlackIPsKey,
 		},
 		[][]string{
-			byteRowsToStrings(embed.ReadWhiteList()),
-			byteRowsToStrings(embed.ReadBlackList()),
+			convert.ByteRowsToStrings(embed.ReadWhiteList()),
+			convert.ByteRowsToStrings(embed.ReadBlackList()),
 		},
 	)
-}
-
-func byteRowsToStrings(fileData []byte) (result []string) {
-	rows := bytes.Split(fileData, []byte{'\n'})
-	for _, w := range rows {
-		result = append(result, string(w))
-	}
-	return
 }
 
 func failOnError(err error, msg string) {

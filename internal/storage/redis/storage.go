@@ -47,15 +47,6 @@ func (s *Storage) Close(ctx context.Context) error {
 	return s.rdb.Close()
 }
 
-// TODO: take seed func from memory db
-// func (s *Storage) Seed(ctx context.Context, key string, data []string) error {
-// 	err := s.rdb.LPush(ctx, key, data).Err()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func (s *Storage) Seed(ctx context.Context, keys []string, values [][]string) error {
 	if len(keys) != len(values) {
 		return errors.New(_seedDataErr)

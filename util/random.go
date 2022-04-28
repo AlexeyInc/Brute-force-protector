@@ -1,5 +1,6 @@
 package util
 
+// TODO: change math/crypto
 import (
 	mathRand "math/rand"
 	"strings"
@@ -7,10 +8,8 @@ import (
 )
 
 const (
-	_ipLen       = 7
-	_loginLen    = 5
-	_passwordLen = 8
-	_alphabet    = "abcdefghijklmnopqrstuvwxyz"
+	_credsLen = 5
+	_alphabet = "abcdefghijklmnopqrstuvwxyz"
 )
 
 func RandomInt(max int) int {
@@ -35,15 +34,15 @@ func RandomString(n int) string {
 }
 
 func RandomIP() string {
-	return RandomString(_ipLen)
+	return RandomString(_credsLen)
 }
 
 func RandomLogin() string {
-	return RandomString(_loginLen)
+	return RandomString(_credsLen)
 }
 
 func RandomPassword() string {
-	return RandomString(_passwordLen)
+	return RandomString(_credsLen)
 }
 
 func UpdateRandSeed() {
