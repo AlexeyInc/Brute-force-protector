@@ -150,7 +150,7 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 		err = fmt.Errorf("%s: %w", constant.BlackListRemoveErr, err)
 		return responseModel(false, "", err)
 	}
-	return responseModel(true, constant.BlackIPRemovedText, nil)
+	return responseModel(true, constant.BlackIPRemovedText, nil) //
 }
 
 func responseModel(succes bool, msg string, err error) (*api.StatusResponse, error) {
