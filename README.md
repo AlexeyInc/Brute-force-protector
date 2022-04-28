@@ -1,2 +1,2 @@
 # Brute-force-protector
-The service is designed to combat password guessing during authorization in any system
+The service is designed to protect from brute force attack during authorization in any system
