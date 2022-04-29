@@ -19,6 +19,9 @@ var configFile = "../../configs/bf-protector_config.toml"
 
 const (
 	_allowRequestsCount = 5
+
+	_whiteListIP = "192.0.2.111"
+	_blackListIP = "194.0.2.222"
 )
 
 type senderCred struct {
@@ -75,15 +78,15 @@ var blackwhiteIPsTests = []struct {
 	message        string
 }{
 	{
-		name:           "detect IP from white list",
-		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
+		name:           "detect IP in white list subnets",
+		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), _whiteListIP},
 		limits:         getDefaultRequestLimits(),
 		expectedResult: true,
 		message:        constant.WhiteListIPText,
 	},
 	{
-		name:           "detect IP from black list",
-		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
+		name:           "detect IP in black list subnets",
+		senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), _blackListIP},
 		limits:         getDefaultRequestLimits(),
 		expectedResult: false,
 		message:        constant.BlackListIPText,
@@ -153,8 +156,8 @@ func TestAuthorization(t *testing.T) {
 
 	ctx := context.Background()
 	err = storage.Seed(ctx,
-		[]string{constant.WhiteIPsKey, constant.BlackIPsKey},
-		[][]string{getWhiteListIPs(), getBlackListIPs()},
+		[]string{constant.WhiteSubnetsKey, constant.BlackSubnetsKey},
+		[][]string{getWhiteListSubnets(), getBlackListSubnets()},
 	)
 	if err != nil {
 		require.NoError(t, err)
@@ -170,8 +173,7 @@ func TestAuthorization(t *testing.T) {
 				Password: bftest.senderData.password,
 				Ip:       bftest.senderData.ip,
 			}
-			resp, err := makeExtraRequestForBruteFroce(ctx, t, app, authData, _allowRequestsCount)
-			require.NoError(t, err)
+			resp := makeExtraRequestForBruteFroce(t, app, authData, _allowRequestsCount)
 			require.Equal(t, false, resp.Success)
 			require.Equal(t, constant.LimitExceededText, resp.Msg)
 		})
@@ -188,9 +190,7 @@ func TestAuthorization(t *testing.T) {
 				Ip:       wbIPstest.senderData.ip,
 			}
 
-			resp, err := simulateRequestWithContext(ctx, app.Authorization, authData)
-
-			require.NoError(t, err)
+			resp := simulateRequestWithContext(t, app.Authorization, authData)
 			require.Equal(t, wbIPstest.expectedResult, resp.Success)
 			require.Equal(t, wbIPstest.message, resp.Msg)
 		})
@@ -201,25 +201,24 @@ func TestAuthorization(t *testing.T) {
 			resetAppContext(app, storage, wbltest.senderData, wbltest.limits)
 			defer finalizeApp(storage)
 
-			login := &api.AuthRequest{
+			authData := &api.AuthRequest{
 				Login:    wbltest.senderData.login,
 				Password: wbltest.senderData.password,
 				Ip:       wbltest.senderData.ip,
 			}
 
-			err := app.storage.AddToReservedIPs(ctx, constant.WhiteIPsKey, wbltest.senderData.ip)
+			whiteSubnet := wbltest.senderData.ip + "/24"
+			err := app.storage.AddToReservedSubnets(ctx, constant.WhiteSubnetsKey, whiteSubnet)
 			require.NoError(t, err)
 
-			resp, err := simulateRequestWithContext(ctx, app.Authorization, login)
-			require.NoError(t, err)
+			resp := simulateRequestWithContext(t, app.Authorization, authData)
 			require.Equal(t, true, resp.Success)
 			require.Equal(t, constant.WhiteListIPText, resp.Msg)
 
-			err = app.storage.RemoveFromReservedIPs(ctx, constant.WhiteIPsKey, wbltest.senderData.ip)
+			err = app.storage.RemoveFromReservedSubnets(ctx, constant.WhiteSubnetsKey, whiteSubnet)
 			require.NoError(t, err)
 
-			resp, err = simulateRequestWithContext(ctx, app.Authorization, login)
-			require.NoError(t, err)
+			resp = simulateRequestWithContext(t, app.Authorization, authData)
 			require.Equal(t, true, resp.Success)
 			require.Equal(t, constant.AuthAllowedText, resp.Msg)
 		})
@@ -236,8 +235,7 @@ func TestAuthorization(t *testing.T) {
 				Ip:       wbltest.senderData.ip,
 			}
 
-			resp, err := makeExtraRequestForBruteFroce(ctx, t, app, authData, _allowRequestsCount)
-			require.NoError(t, err)
+			resp := makeExtraRequestForBruteFroce(t, app, authData, _allowRequestsCount)
 			require.Equal(t, false, resp.Success)
 			require.Equal(t, constant.LimitExceededText, resp.Msg)
 
@@ -251,8 +249,7 @@ func TestAuthorization(t *testing.T) {
 			require.Equal(t, true, resp.Success)
 			require.Equal(t, constant.BucketResetText, resp.Msg)
 
-			resp, err = simulateRequestWithContext(ctx, app.Authorization, authData)
-			require.NoError(t, err)
+			resp = simulateRequestWithContext(t, app.Authorization, authData)
 			require.Equal(t, true, resp.Success)
 			require.Equal(t, constant.AuthAllowedText, resp.Msg)
 		})
@@ -266,23 +263,26 @@ func TestAuthorization(t *testing.T) {
 			Password: util.RandomPassword(),
 			Ip:       util.RandomIP(),
 		}
-		resp, err := simulateRequestWithContext(ctx, app.Authorization, authData)
+
+		memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
+		resp, err := app.Authorization(context.Background(), authData)
+		memorystorage.RequestContextWG.Wait()
+
 		require.Error(t, err)
 		require.Equal(t, false, resp.Success)
 		require.Equal(t, "", resp.Msg)
 	})
 }
 
-func makeExtraRequestForBruteFroce(context context.Context, t *testing.T,
+func makeExtraRequestForBruteFroce(t *testing.T,
 	app *App, authData *api.AuthRequest, requestCount int,
-) (*api.StatusResponse, error) {
+) *api.StatusResponse {
 	t.Helper()
 	for i := 0; i < requestCount; i++ {
-		resp, err := simulateRequestWithContext(context, app.Authorization, authData)
-		require.NoError(t, err)
+		resp := simulateRequestWithContext(t, app.Authorization, authData)
 		require.Equal(t, true, resp.Success)
 	}
-	return simulateRequestWithContext(context, app.Authorization, authData)
+	return simulateRequestWithContext(t, app.Authorization, authData)
 }
 
 func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCred, limits bruteForceLimits) {
@@ -302,38 +302,41 @@ func finalizeApp(storage *memorystorage.MemoryStorage) {
 	storage.ResetDoneContext()
 }
 
-func simulateRequestWithContext(ctx context.Context,
+func simulateRequestWithContext(t *testing.T,
 	f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error),
 	login *api.AuthRequest,
-) (*api.StatusResponse, error) {
+) *api.StatusResponse {
+	t.Helper()
 	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
+	ctx := context.Background()
 	resp, err := f(ctx, login)
+	require.NoError(t, err)
 	memorystorage.RequestContextWG.Wait()
-	return resp, err
+	return resp
 }
 
 func getRandomAuthData() senderCred {
-	return senderCred{util.RandomLogin() + "_Login", util.RandomPassword() + "_Password", util.RandomIP() + "_IP"}
+	return senderCred{util.RandomLogin() + "_Login", util.RandomPassword() + "_Password", util.RandomIP()}
 }
 
 func getDefaultRequestLimits() bruteForceLimits {
 	return bruteForceLimits{_allowRequestsCount, _allowRequestsCount, _allowRequestsCount}
 }
 
-func randWhiteIP() string {
-	whiteIPs := getWhiteListIPs()
-	return whiteIPs[util.RandomIntRange(0, int64(len(whiteIPs)-1))]
-}
+// func randWhiteIP() string {
+// 	whiteIPs := getWhiteListSubnets()
+// 	return whiteIPs[util.RandomIntRange(0, int64(len(whiteIPs)-1))]
+// }
 
-func randBlackIP() string {
-	blackIPs := getBlackListIPs()
-	return blackIPs[util.RandomIntRange(0, int64(len(blackIPs)-1))]
-}
+// func randBlackIP() string {
+// 	blackIPs := getBlackListSubnets()
+// 	return blackIPs[util.RandomIntRange(0, int64(len(blackIPs)-1))]
+// }
 
-func getWhiteListIPs() []string {
+func getWhiteListSubnets() []string {
 	return util.ByteRowsToStrings(embed.ReadWhiteList())
 }
 
-func getBlackListIPs() []string {
+func getBlackListSubnets() []string {
 	return util.ByteRowsToStrings(embed.ReadBlackList())
 }

@@ -21,7 +21,7 @@ func reserveCmd() *cobra.Command {
 	reserveCmd := &cobra.Command{
 		Use:   "reserve",
 		Short: "managing of white/black lists",
-		Long:  `exaple: bfp-cli --action=add -list=white TestAPI`,
+		Long:  `exaple: bfp-cli --action=add --list=white TestAPI`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("reserve called")
 
@@ -37,7 +37,7 @@ func reserveCmd() *cobra.Command {
 
 			ctx := cmd.Context()
 			ip := &bfprotector.SubnetRequest{
-				Ip: args[0],
+				Cidr: args[0],
 			}
 
 			resp := &bfprotector.StatusResponse{}

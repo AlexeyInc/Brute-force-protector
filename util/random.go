@@ -3,8 +3,11 @@ package util
 // TODO: change math/crypto...
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"log"
 	"math/big"
+	mathrand "math/rand"
+	"net"
 	"strings"
 )
 
@@ -42,7 +45,13 @@ func RandomString(n int) string {
 }
 
 func RandomIP() string {
-	return RandomString(_credsLen)
+	buf := make([]byte, 4)
+
+	ip := mathrand.Uint32() //nolint
+
+	binary.LittleEndian.PutUint32(buf, ip)
+
+	return net.IP(buf).String()
 }
 
 func RandomLogin() string {

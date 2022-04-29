@@ -62,8 +62,8 @@ func main() {
 func seedDatabase(ctx context.Context, storage *redistorage.Storage) error {
 	return storage.Seed(ctx,
 		[]string{
-			constant.WhiteIPsKey,
-			constant.BlackIPsKey,
+			constant.WhiteSubnetsKey,
+			constant.BlackSubnetsKey,
 		},
 		[][]string{
 			convert.ByteRowsToStrings(embed.ReadWhiteList()),

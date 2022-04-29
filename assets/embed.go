@@ -4,10 +4,10 @@ import (
 	_ "embed"
 )
 
-//go:embed whitelist_IPs.txt
+//go:embed whitelistSubnets.txt
 var whiteIPs []byte
 
-//go:embed blacklist_IPs.txt
+//go:embed blacklistSubnets.txt
 var blackIPs []byte
 
 func ReadWhiteList() []byte {

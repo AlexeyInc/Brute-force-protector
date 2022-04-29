@@ -19,5 +19,5 @@ func (model *ResetBucketRequest) IsValid() bool {
 }
 
 func (model *SubnetRequest) IsValid() bool {
-	return model.GetIp() != ""
+	return model.GetCidr() != ""
 }

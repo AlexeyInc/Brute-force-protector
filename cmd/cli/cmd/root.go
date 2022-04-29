@@ -33,7 +33,7 @@ var rootCmd = &cobra.Command{
 What you can do:
 	- authorization request
 	- call a bucket reset
-	- manage the whitelist/blacklist`,
+	- manage white/black lists`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

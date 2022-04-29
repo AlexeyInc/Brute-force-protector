@@ -3,6 +3,8 @@ package memorystorage
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"strings"
 	"sync"
 
@@ -88,18 +90,25 @@ func (ms *MemoryStorage) CheckBruteForce(context context.Context,
 	}
 }
 
-func (ms *MemoryStorage) IsReservedIP(ctx context.Context, key string, senderIP string) bool {
-	ips, exists := ms.BlackWhiteIPs[key]
+func (ms *MemoryStorage) IsReservedIP(ctx context.Context, key, ip string) (bool, error) {
+	subnets, exists := ms.BlackWhiteIPs[key]
 	if !exists {
-		return false
+		return false, fmt.Errorf("%s", constant.DBSubnetsErr)
 	}
-	for _, ip := range ips {
-		if ip == senderIP {
-			finalizeRequest()
-			return true
+	if len(subnets) > 0 {
+		for _, cidr := range subnets {
+			_, ipv4Net, err := net.ParseCIDR(cidr)
+			if err != nil {
+				return false, fmt.Errorf("%s: %w", constant.DBRequestErr, err)
+			}
+			ipv4Addr := net.ParseIP(ip)
+			if ipv4Net.Contains(ipv4Addr) {
+				finalizeRequest()
+				return true, nil
+			}
 		}
 	}
-	return false
+	return false, nil
 }
 
 func finalizeRequest() {
@@ -124,21 +133,21 @@ func (ms *MemoryStorage) ResetBucket(context context.Context, key string) (err e
 	if strings.HasSuffix(key, "_Login") {
 		ms.Bucket[key] = ms.config.AttemptsLimit.LoginRequestsMinute
 	}
-	if strings.HasSuffix(key, "_IP") {
+	if net.ParseIP(key) != nil {
 		ms.Bucket[key] = ms.config.AttemptsLimit.IPRequestsMinute
 	}
 	ms.ResetDoneContext()
 	return
 }
 
-func (ms *MemoryStorage) AddToReservedIPs(context context.Context, key string, ip string) (err error) {
+func (ms *MemoryStorage) AddToReservedSubnets(context context.Context, key string, subnet string) (err error) {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
-	ms.BlackWhiteIPs[key] = append(ms.BlackWhiteIPs[key], ip)
+	ms.BlackWhiteIPs[key] = append(ms.BlackWhiteIPs[key], subnet)
 	return
 }
 
-func (ms *MemoryStorage) RemoveFromReservedIPs(context context.Context, key string, ip string) (err error) {
+func (ms *MemoryStorage) RemoveFromReservedSubnets(context context.Context, key string, subnet string) (err error) {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
 	ips, ok := ms.BlackWhiteIPs[key]
@@ -147,7 +156,7 @@ func (ms *MemoryStorage) RemoveFromReservedIPs(context context.Context, key stri
 	}
 	indx := -1
 	for i, v := range ips {
-		if v == ip {
+		if v == subnet {
 			indx = i
 			break
 		}

@@ -21,7 +21,7 @@ message StatusResponse {
 }
 
 message SubnetRequest {
-    string ip = 1;
+    string cidr = 1;
 }
 
 service BruteForceProtectorService {
