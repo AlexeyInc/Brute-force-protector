@@ -3,6 +3,5 @@ bin/
 api/google/
 api/protoc/google/
 api/swagger/google/
-vendor/
 deployments/pgdata
 deployments/rabbit-mq

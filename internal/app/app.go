@@ -119,7 +119,7 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 	return responseModel(true, constant.BucketResetText, nil)
 }
 
-// add is in black list check
+// add is in black list check.
 func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
@@ -223,6 +223,6 @@ func responseModel(succes bool, msg string, err error) (*api.StatusResponse, err
 }
 
 // TODO: add secription in readme that program don't contain any login about
-// interseption of white and blck list
+// interception of white and blck list
 // It may sound like white list has hirst priority
 // IN order to add some ips to black list, firstly -- you should remove from white list

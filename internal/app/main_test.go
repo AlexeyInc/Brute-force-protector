@@ -14,30 +14,28 @@ import (
 
 var (
 	configFile = "../../configs/bf-protector_config.toml"
-	config     protectorconfig.Config
 	storage    *memorystorage.MemoryStorage
 	app        *App
 	testCtx    = context.Background()
 )
 
 func TestMain(m *testing.M) {
-	var err error
-	config, err = protectorconfig.NewConfig(configFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	setup(config)
+	setup()
 	code := m.Run()
 	shutdown()
 
 	os.Exit(code)
 }
 
-func setup(conf protectorconfig.Config) {
+func setup() {
+	config, err := protectorconfig.NewConfig(configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	storage = memorystorage.New(config)
 
-	err := storage.Seed(context.Background(),
+	err = storage.Seed(context.Background(),
 		[]string{constant.WhiteSubnetsKey, constant.BlackSubnetsKey},
 		[][]string{getWhiteListSubnets(), getBlackListSubnets()},
 	)

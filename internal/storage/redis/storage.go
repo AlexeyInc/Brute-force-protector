@@ -69,7 +69,6 @@ func (s *Storage) CheckBruteForce(ctx context.Context,
 		Burst:  requestLimitPerMinutes,
 		Period: time.Minute,
 	})
-
 	if err != nil {
 		select {
 		case <-ctx.Done():
@@ -81,6 +80,7 @@ func (s *Storage) CheckBruteForce(ctx context.Context,
 		}
 	}
 
+	// TODO add logger and move lof inside it
 	fmt.Println("allowed:", res.Allowed > 0, "(For", key, "remain", res.Remaining, "attempts) ", time.Now())
 	if res.Allowed == 0 {
 		select {
@@ -139,7 +139,7 @@ func (s *Storage) AddToReservedSubnets(context context.Context, key, ipNet strin
 }
 
 func (s *Storage) RemoveFromReservedSubnets(context context.Context, key, ipNet string) error {
-	res, err := s.rdb.LRem(context, key, 0, ipNet).Result() //.Err()
+	res, err := s.rdb.LRem(context, key, 0, ipNet).Result()
 	if err != nil {
 		return fmt.Errorf("%s: %w", constant.DBRemoveSubnetErr, err)
 	}

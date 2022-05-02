@@ -6,20 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	bfprotector "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	redisdb "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
 	"github.com/AlexeyInc/Brute-force-protector/util"
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
 	N = 10
 	M = 100
-	K = 1000 // TODO: add this values in env vars in docker-compose.test.yml !
+	K = 1000
 
 	_maxSecToWait int64 = 3
 )
@@ -83,7 +82,6 @@ func (s *BFProtectorSuite) TestBruteForceAndBucketResetForLogin() {
 		Login: s.curAuthData.Login,
 	})
 	s.authorizationCheck(true, constant.AuthAllowedText)
-
 }
 
 func (s *BFProtectorSuite) TestBruteForceForPassword() {
@@ -171,7 +169,7 @@ func (s *BFProtectorSuite) authorizationCheck(excpectedResult bool, msg string) 
 	s.Require().Equal(msg, resp.Msg)
 }
 
-func (s *BFProtectorSuite) responseCheck(resp *bfprotector.StatusResponse, excpectedResult bool, msg string) {
+func (s *BFProtectorSuite) responseCheck(resp *bfprotector.StatusResponse, excpectedResult bool, msg string) { //nolint
 	s.Require().Equal(excpectedResult, resp.Success)
 	s.Require().Equal(msg, resp.Msg)
 }

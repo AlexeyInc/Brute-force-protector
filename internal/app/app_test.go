@@ -17,10 +17,7 @@ import (
 
 const (
 	_allowRequestsCount = 5
-
-	_whiteListIP = "192.0.2.111"
-	_blackListIP = "194.0.2.222"
-	_maskLen     = 3
+	_maskLen            = 3
 )
 
 type senderCred struct {
@@ -38,7 +35,7 @@ type bruteForceLimits struct {
 // TODO add tests for model validation
 
 func TestWhiteBlackList(t *testing.T) {
-	var blackwhiteIPsTests = []struct {
+	blackwhiteIPsTests := []struct {
 		name           string
 		senderData     senderCred
 		limits         bruteForceLimits
@@ -77,7 +74,7 @@ func TestWhiteBlackList(t *testing.T) {
 		})
 	}
 
-	var manageWhiteBlackListTest = []struct {
+	manageWhiteBlackListTest := []struct {
 		name           string
 		listType       string
 		senderData     senderCred
@@ -150,7 +147,7 @@ func TestWhiteBlackList(t *testing.T) {
 }
 
 func TestAuthorization(t *testing.T) {
-	var bruteForceTests = []struct {
+	bruteForceTests := []struct {
 		name       string
 		senderData senderCred
 		limits     bruteForceLimits
@@ -199,7 +196,7 @@ func TestAuthorization(t *testing.T) {
 		})
 	}
 
-	var resetBucketTest = []struct {
+	resetBucketTest := []struct {
 		name       string
 		senderData senderCred
 		limits     bruteForceLimits
@@ -272,6 +269,7 @@ func TestErrHandling(t *testing.T) {
 }
 
 func responseCheck(t *testing.T, resp *api.StatusResponse, expectedResult bool, msg string) {
+	t.Helper()
 	require.Equal(t, expectedResult, resp.Success)
 	require.Equal(t, msg, resp.Msg)
 }
