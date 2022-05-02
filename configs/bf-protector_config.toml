@@ -7,6 +7,6 @@ network = "tcp"
 source = "localhost:6379"
 
 [ATTEMPTSLIMIT]
-loginRequestsMinute = 2
-passwordRequestsMinute = 10
-ipRequestsMinute = 4
+loginRequestsMinute = 10
+passwordRequestsMinute = 100
+ipRequestsMinute = 1000

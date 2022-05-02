@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
+	"time"
 
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
@@ -12,7 +14,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+const _strictRateLimit = 1
+
 type Storage struct {
+	sync.Mutex
 	rdb     *redis.Client
 	limiter *redis_rate.Limiter
 	Source  string
@@ -39,7 +44,7 @@ func (s *Storage) Connect(ctx context.Context) error {
 	return nil
 }
 
-func (s *Storage) Close(ctx context.Context) error {
+func (s *Storage) Close() error {
 	return s.rdb.Close()
 }
 
@@ -59,7 +64,12 @@ func (s *Storage) Seed(ctx context.Context, keys []string, values [][]string) er
 func (s *Storage) CheckBruteForce(ctx context.Context,
 	key string, requestLimitPerMinutes int, allowCh chan<- bool, errCh chan<- error,
 ) {
-	res, err := s.limiter.Allow(ctx, key, redis_rate.PerMinute(requestLimitPerMinutes))
+	res, err := s.limiter.Allow(ctx, key, redis_rate.Limit{
+		Rate:   _strictRateLimit,
+		Burst:  requestLimitPerMinutes,
+		Period: time.Minute,
+	})
+
 	if err != nil {
 		select {
 		case <-ctx.Done():
@@ -71,7 +81,7 @@ func (s *Storage) CheckBruteForce(ctx context.Context,
 		}
 	}
 
-	fmt.Println("allowed:", res.Allowed > 0, "(For", key, "remain", res.Remaining, "attempts)")
+	fmt.Println("allowed:", res.Allowed > 0, "(For", key, "remain", res.Remaining, "attempts) ", time.Now())
 	if res.Allowed == 0 {
 		select {
 		case <-ctx.Done():
@@ -97,9 +107,12 @@ func (s *Storage) IsReservedIP(ctx context.Context, key, ip string) (bool, error
 		for _, cidr := range subnets {
 			_, ipv4Net, err := net.ParseCIDR(cidr)
 			if err != nil {
-				return false, fmt.Errorf("%s: %w", constant.DBRequestErr, err)
+				return false, fmt.Errorf("%s: %w", constant.SubnetParseErr, err)
 			}
 			ipv4Addr := net.ParseIP(ip)
+			if ipv4Addr == nil {
+				return false, fmt.Errorf("%s: %w", constant.InvalidIPErr, err)
+			}
 			if ipv4Net.Contains(ipv4Addr) {
 				return true, nil
 			}
@@ -109,38 +122,37 @@ func (s *Storage) IsReservedIP(ctx context.Context, key, ip string) (bool, error
 }
 
 func (s *Storage) ResetBucket(ctx context.Context, key string) error {
-	fmt.Println("Reset for key: ", key)
 	return s.limiter.Reset(ctx, key)
 }
 
-// TODO: add integration test on dublication...
 func (s *Storage) AddToReservedSubnets(context context.Context, key, ipNet string) error {
 	reservedIPNets, err := s.rdb.LRange(context, key, 0, -1).Result()
 	if err != nil {
-		return fmt.Errorf("%s: %w", constant.DBReserveSubnetErr, err)
+		return fmt.Errorf("%s: %w", constant.DBSubnetsErr, err)
 	}
 	for _, v := range reservedIPNets {
 		if v == ipNet {
-			return fmt.Errorf("IP: %s already reserved", ipNet)
+			return fmt.Errorf("subnet: %s already reserved", ipNet)
 		}
 	}
 	return s.rdb.RPush(context, key, ipNet).Err()
 }
 
 func (s *Storage) RemoveFromReservedSubnets(context context.Context, key, ipNet string) error {
+	res, err := s.rdb.LRem(context, key, 0, ipNet).Result() //.Err()
+	if err != nil {
+		return fmt.Errorf("%s: %w", constant.DBRemoveSubnetErr, err)
+	}
+	if res < 1 {
+		return fmt.Errorf("subnet: %s is not reserved", ipNet)
+	}
+	return nil
+}
+
+func (s *Storage) GetReservedSubnets(context context.Context, key string) ([]string, error) {
 	reservedIPNets, err := s.rdb.LRange(context, key, 0, -1).Result()
 	if err != nil {
-		return fmt.Errorf("%s: %w", constant.DBReserveSubnetErr, err)
+		return nil, fmt.Errorf("%s: %w", constant.DBSubnetsErr, err)
 	}
-	ipIndex := -1
-	for i, v := range reservedIPNets {
-		if v == ipNet {
-			ipIndex = i
-			break
-		}
-	}
-	if ipIndex == -1 {
-		return fmt.Errorf("IP: %s not reserved", ipNet)
-	}
-	return s.rdb.LRem(context, key, 0, ipNet).Err()
+	return reservedIPNets, nil
 }

@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 	"log"
 	"math/big"
-	mathrand "math/rand"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -45,11 +45,9 @@ func RandomString(n int) string {
 }
 
 func RandomIP() string {
+	ip := RandomIntRange(1000000000, 20000000000)
 	buf := make([]byte, 4)
-
-	ip := mathrand.Uint32() //nolint
-
-	binary.LittleEndian.PutUint32(buf, ip)
+	binary.LittleEndian.PutUint32(buf, uint32(ip))
 
 	return net.IP(buf).String()
 }
@@ -60,4 +58,8 @@ func RandomLogin() string {
 
 func RandomPassword() string {
 	return RandomString(_credsLen)
+}
+
+func RandomSubnet() string {
+	return RandomIP() + "/" + strconv.Itoa(RandomInt(32))
 }

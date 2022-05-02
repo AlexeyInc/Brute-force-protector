@@ -168,3 +168,11 @@ func (ms *MemoryStorage) RemoveFromReservedSubnets(context context.Context, key 
 	ms.BlackWhiteIPs[key] = ips[:len(ips)-1]
 	return
 }
+
+func (ms *MemoryStorage) GetReservedSubnets(context context.Context, key string) ([]string, error) {
+	ips, ok := ms.BlackWhiteIPs[key]
+	if !ok {
+		return nil, fmt.Errorf("key not exist")
+	}
+	return ips, nil
+}

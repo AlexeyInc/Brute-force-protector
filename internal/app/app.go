@@ -23,6 +23,7 @@ type Storage interface {
 	AddToReservedSubnets(context context.Context, key, ipNet string) error
 	RemoveFromReservedSubnets(context context.Context, key, ipNet string) error
 	IsReservedIP(ctx context.Context, key, ip string) (bool, error)
+	GetReservedSubnets(context context.Context, key string) ([]string, error)
 }
 
 func New(config protectorconfig.Config, storage Storage) *App {
@@ -102,18 +103,23 @@ func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.S
 }
 
 func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) (*api.StatusResponse, error) {
-	if !bucket.IsValid() {
-		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	// if !bucket.IsValid() {
+	// 	return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+	// }
+	if bucket.GetIp() != "" {
+		if err := a.storage.ResetBucket(ctx, bucket.Ip); err != nil {
+			return responseModel(false, "", fmt.Errorf("%s: %w", constant.ResetBucketErr, err))
+		}
 	}
-	if err := a.storage.ResetBucket(ctx, bucket.Ip); err != nil {
-		return responseModel(false, "", fmt.Errorf("%s: %w", constant.ResetBucketErr, err))
-	}
-	if err := a.storage.ResetBucket(ctx, bucket.Login); err != nil {
-		return responseModel(false, "", fmt.Errorf("%s: %w", constant.ResetBucketErr, err))
+	if bucket.GetLogin() != "" {
+		if err := a.storage.ResetBucket(ctx, bucket.Login); err != nil {
+			return responseModel(false, "", fmt.Errorf("%s: %w", constant.ResetBucketErr, err))
+		}
 	}
 	return responseModel(true, constant.BucketResetText, nil)
 }
 
+// add is in black list check
 func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
@@ -121,6 +127,13 @@ func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr)
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
+	}
+	existInBlackList, err := a.alreadyReserved(ctx, constant.BlackSubnetsKey, ipv4Net)
+	if err != nil {
+		return responseModel(false, "", err)
+	}
+	if existInBlackList {
+		return responseModel(false, constant.ExistInBlackListErr, nil)
 	}
 	if err = a.storage.AddToReservedSubnets(ctx, constant.WhiteSubnetsKey, ipv4Net.String()); err != nil {
 		return responseModel(false, "", err)
@@ -142,6 +155,10 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	return responseModel(true, constant.WhiteSubnetRemovedText, nil)
 }
 
+// TODO - add is in white list check
+// - can't reserve the same
+// - can't remove non existing
+
 func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
@@ -149,6 +166,13 @@ func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr) // TODO add to cli
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
+	}
+	existInWhiteList, err := a.alreadyReserved(ctx, constant.WhiteSubnetsKey, ipv4Net)
+	if err != nil {
+		return responseModel(false, "", err)
+	}
+	if existInWhiteList {
+		return responseModel(false, constant.ExistInWhiteListErr, nil)
 	}
 	if err := a.storage.AddToReservedSubnets(ctx, constant.BlackSubnetsKey, ipv4Net.String()); err != nil {
 		return responseModel(false, "", err)
@@ -170,25 +194,18 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	return responseModel(true, constant.BlackSubnetRemovedText, nil)
 }
 
-// func (a *App) isReservedIP(ctx context.Context, listType, ip string) (bool, error) {
-// 	subnets, err := a.storage.IsReservedIP(ctx, listType)
-// 	if err != nil {
-// 		return false, fmt.Errorf("%s: %w", constant.DBRequestErr, err)
-// 	}
-// 	if len(subnets) > 0 {
-// 		for _, cidr := range subnets {
-// 			_, ipv4Net, err := net.ParseCIDR(cidr)
-// 			if err != nil {
-// 				return false, fmt.Errorf("%s: %w", constant.DBRequestErr, err)
-// 			}
-// 			ipv4Addr := net.ParseIP(ip)
-// 			if ipv4Net.Contains(ipv4Addr) {
-// 				return true, nil
-// 			}
-// 		}
-// 	}
-// 	return false, nil
-// }
+func (a *App) alreadyReserved(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
+	blackSubnets, err := a.storage.GetReservedSubnets(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	for _, v := range blackSubnets {
+		if v == ipv4Net.String() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func getIPNetFromCIDR(cidr string) (*net.IPNet, error) {
 	_, ipv4Net, err := net.ParseCIDR(cidr)
@@ -204,3 +221,8 @@ func responseModel(succes bool, msg string, err error) (*api.StatusResponse, err
 		Msg:     msg,
 	}, err
 }
+
+// TODO: add secription in readme that program don't contain any login about
+// interseption of white and blck list
+// It may sound like white list has hirst priority
+// IN order to add some ips to black list, firstly -- you should remove from white list

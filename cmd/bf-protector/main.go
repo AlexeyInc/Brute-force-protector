@@ -41,7 +41,7 @@ func main() {
 		return
 	}
 	fmt.Println("Successfully connected to redis database!")
-	defer storage.Close(ctx)
+	defer storage.Close()
 
 	err = seedDatabase(ctx, storage)
 	if err != nil {

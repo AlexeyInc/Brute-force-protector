@@ -13,11 +13,6 @@ func (model *AuthRequest) IsValid() bool {
 	return true
 }
 
-func (model *ResetBucketRequest) IsValid() bool {
-	return model.GetIp() != "" &&
-		model.GetLogin() != ""
-}
-
 func (model *SubnetRequest) IsValid() bool {
 	return model.GetCidr() != ""
 }
