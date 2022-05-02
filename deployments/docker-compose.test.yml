@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  integration_tests:
+    build:
+      context: ../.
+      dockerfile: ./tests/integration/integration-tests.Dockerfile
+    environment:
+      BFPROTECTOR_SERVER_ADDR: "bf-protector-app:8081"
+      BFPROTECTOR_STORAGE_SOURCE: "cache:6379"
+    depends_on:
+      bf-protector:
+        condition: service_started
+  
+  bf-protector:
+    environment:
+      ATTEMPTSLIMIT_LOGINREQUESTSMINUTE: "10"
+      ATTEMPTSLIMIT_PASSWORDREQUESTSMINUTE: "100"
+      ATTEMPTSLIMIT_IPREQUESTSMINUTE: "1000"

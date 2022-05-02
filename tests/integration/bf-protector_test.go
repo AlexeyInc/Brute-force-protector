@@ -34,13 +34,13 @@ type BFProtectorSuite struct {
 }
 
 func (s *BFProtectorSuite) SetupSuite() {
-	bfprotectorHost := os.Getenv("BFPROTECTOR_SERVER_HOST")
-	if bfprotectorHost == "" {
-		bfprotectorHost = "localhost:8081"
+	bfprotectorHostAddr := os.Getenv("BFPROTECTOR_SERVER_ADDR")
+	if bfprotectorHostAddr == "" {
+		bfprotectorHostAddr = "localhost:8081"
 	}
 
 	var err error
-	s.serverConn, err = grpc.Dial(bfprotectorHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	s.serverConn, err = grpc.Dial(bfprotectorHostAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	s.Require().NoError(err)
 
 	s.ctx = context.Background()

@@ -73,8 +73,7 @@ func TestWhiteBlackList(t *testing.T) {
 			}
 
 			resp := simulateRequestWithContext(t, app.Authorization, authData)
-			require.Equal(t, wbIPstest.expectedResult, resp.Success)
-			require.Equal(t, wbIPstest.message, resp.Msg)
+			responseCheck(t, resp, wbIPstest.expectedResult, wbIPstest.message)
 		})
 	}
 
@@ -123,36 +122,29 @@ func TestWhiteBlackList(t *testing.T) {
 			case "white":
 				resp, err := app.AddWhiteListIP(testCtx, subnet)
 				require.NoError(t, err)
-				require.Equal(t, true, resp.Success)
-				require.Equal(t, constant.WhiteSubnetAddedText, resp.Msg)
+				responseCheck(t, resp, true, constant.WhiteSubnetAddedText)
 
 				resp = simulateRequestWithContext(t, app.Authorization, authData)
-				require.Equal(t, true, resp.Success)
-				require.Equal(t, constant.WhiteListIPText, resp.Msg)
+				responseCheck(t, resp, true, constant.WhiteListIPText)
 
 				resp, err = app.DeleteWhiteListIP(testCtx, subnet)
 				require.NoError(t, err)
-				require.Equal(t, true, resp.Success)
-				require.Equal(t, constant.WhiteSubnetRemovedText, resp.Msg)
+				responseCheck(t, resp, true, constant.WhiteSubnetRemovedText)
 			case "black":
 				resp, err := app.AddBlackListIP(testCtx, subnet)
 				require.NoError(t, err)
-				require.Equal(t, true, resp.Success)
-				require.Equal(t, constant.BlackSubnetAddedText, resp.Msg)
+				responseCheck(t, resp, true, constant.BlackSubnetAddedText)
 
 				resp = simulateRequestWithContext(t, app.Authorization, authData)
-				require.Equal(t, false, resp.Success)
-				require.Equal(t, constant.BlackListIPText, resp.Msg)
+				responseCheck(t, resp, false, constant.BlackListIPText)
 
 				resp, err = app.DeleteBlackListIP(testCtx, subnet)
 				require.NoError(t, err)
-				require.Equal(t, true, resp.Success)
-				require.Equal(t, constant.BlackSubnetRemovedText, resp.Msg)
+				responseCheck(t, resp, true, constant.BlackSubnetRemovedText)
 			}
 
 			resp := simulateRequestWithContext(t, app.Authorization, authData)
-			require.Equal(t, true, resp.Success)
-			require.Equal(t, constant.AuthAllowedText, resp.Msg)
+			responseCheck(t, resp, true, constant.AuthAllowedText)
 		})
 	}
 }
@@ -203,8 +195,7 @@ func TestAuthorization(t *testing.T) {
 				Ip:       bftest.senderData.ip,
 			}
 			resp := makeExtraRequestForBruteFroce(t, app, authData, _allowRequestsCount)
-			require.Equal(t, false, resp.Success)
-			require.Equal(t, constant.LimitExceededText, resp.Msg)
+			responseCheck(t, resp, false, constant.LimitExceededText)
 		})
 	}
 
@@ -245,8 +236,7 @@ func TestAuthorization(t *testing.T) {
 			}
 
 			resp := makeExtraRequestForBruteFroce(t, app, authData, _allowRequestsCount)
-			require.Equal(t, false, resp.Success)
-			require.Equal(t, constant.LimitExceededText, resp.Msg)
+			responseCheck(t, resp, false, constant.LimitExceededText)
 
 			resetBucket := &api.ResetBucketRequest{
 				Login: authData.Login,
@@ -255,13 +245,10 @@ func TestAuthorization(t *testing.T) {
 
 			resp, err := app.ResetBuckets(testCtx, resetBucket)
 			require.NoError(t, err)
-			require.Equal(t, true, resp.Success)
-			require.Equal(t, constant.BucketResetText, resp.Msg)
+			responseCheck(t, resp, true, constant.BucketResetText)
 
 			resp = simulateRequestWithContext(t, app.Authorization, authData)
 			responseCheck(t, resp, true, constant.AuthAllowedText)
-			// require.Equal(t, true, resp.Success)
-			// require.Equal(t, constant.AuthAllowedText, resp.Msg)
 		})
 	}
 }
@@ -279,10 +266,8 @@ func TestErrHandling(t *testing.T) {
 		memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
 		resp, err := app.Authorization(context.Background(), authData)
 		memorystorage.RequestContextWG.Wait()
-
 		require.Error(t, err)
-		require.Equal(t, false, resp.Success)
-		require.Equal(t, "", resp.Msg)
+		responseCheck(t, resp, false, "")
 	})
 }
 
