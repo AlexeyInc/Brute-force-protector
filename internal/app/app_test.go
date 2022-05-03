@@ -1,9 +1,8 @@
 package protectorapp
 
-// TODO: add test with some shity data and handle errors
-
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -30,120 +29,6 @@ type bruteForceLimits struct {
 	ip       int
 	login    int
 	password int
-}
-
-// TODO add tests for model validation
-
-func TestWhiteBlackList(t *testing.T) {
-	blackwhiteIPsTests := []struct {
-		name           string
-		senderData     senderCred
-		limits         bruteForceLimits
-		expectedResult bool
-		message        string
-	}{
-		{
-			name:           "detect IP in white list subnets",
-			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
-			limits:         getDefaultRequestLimits(),
-			expectedResult: true,
-			message:        constant.WhiteListIPText,
-		},
-		{
-			name:           "detect IP in black list subnets",
-			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
-			limits:         getDefaultRequestLimits(),
-			expectedResult: false,
-			message:        constant.BlackListIPText,
-		},
-	}
-
-	for _, wbIPstest := range blackwhiteIPsTests {
-		t.Run(wbIPstest.name, func(t *testing.T) {
-			resetAppContext(app, storage, wbIPstest.senderData, wbIPstest.limits)
-			defer finalizeApp(storage)
-
-			authData := &api.AuthRequest{
-				Login:    wbIPstest.senderData.login,
-				Password: wbIPstest.senderData.password,
-				Ip:       wbIPstest.senderData.ip,
-			}
-
-			resp := simulateRequestWithContext(t, app.Authorization, authData)
-			responseCheck(t, resp, wbIPstest.expectedResult, wbIPstest.message)
-		})
-	}
-
-	manageWhiteBlackListTest := []struct {
-		name           string
-		listType       string
-		senderData     senderCred
-		limits         bruteForceLimits
-		expectedResult bool
-		message        string
-	}{
-		{
-			name:           "white list add operation/remove operation",
-			listType:       "white",
-			senderData:     getRandomAuthData(),
-			limits:         getDefaultRequestLimits(),
-			expectedResult: true,
-			message:        constant.WhiteListIPText,
-		},
-		{
-			name:           "black list add operation/remove operation",
-			listType:       "black",
-			senderData:     getRandomAuthData(),
-			limits:         getDefaultRequestLimits(),
-			expectedResult: false,
-			message:        constant.BlackListIPText,
-		},
-	}
-
-	for _, wbltest := range manageWhiteBlackListTest {
-		t.Run(wbltest.name, func(t *testing.T) {
-			resetAppContext(app, storage, wbltest.senderData, wbltest.limits)
-			defer finalizeApp(storage)
-
-			authData := &api.AuthRequest{
-				Login:    wbltest.senderData.login,
-				Password: wbltest.senderData.password,
-				Ip:       wbltest.senderData.ip,
-			}
-
-			subnet := &api.SubnetRequest{
-				Cidr: wbltest.senderData.ip + "/" + randMask(),
-			}
-
-			switch wbltest.listType {
-			case "white":
-				resp, err := app.AddWhiteListIP(testCtx, subnet)
-				require.NoError(t, err)
-				responseCheck(t, resp, true, constant.WhiteSubnetAddedText)
-
-				resp = simulateRequestWithContext(t, app.Authorization, authData)
-				responseCheck(t, resp, true, constant.WhiteListIPText)
-
-				resp, err = app.DeleteWhiteListIP(testCtx, subnet)
-				require.NoError(t, err)
-				responseCheck(t, resp, true, constant.WhiteSubnetRemovedText)
-			case "black":
-				resp, err := app.AddBlackListIP(testCtx, subnet)
-				require.NoError(t, err)
-				responseCheck(t, resp, true, constant.BlackSubnetAddedText)
-
-				resp = simulateRequestWithContext(t, app.Authorization, authData)
-				responseCheck(t, resp, false, constant.BlackListIPText)
-
-				resp, err = app.DeleteBlackListIP(testCtx, subnet)
-				require.NoError(t, err)
-				responseCheck(t, resp, true, constant.BlackSubnetRemovedText)
-			}
-
-			resp := simulateRequestWithContext(t, app.Authorization, authData)
-			responseCheck(t, resp, true, constant.AuthAllowedText)
-		})
-	}
 }
 
 func TestAuthorization(t *testing.T) {
@@ -180,7 +65,6 @@ func TestAuthorization(t *testing.T) {
 			},
 		},
 	}
-
 	for _, bftest := range bruteForceTests {
 		t.Run(bftest.name, func(t *testing.T) {
 			resetAppContext(app, storage, bftest.senderData, bftest.limits)
@@ -195,7 +79,9 @@ func TestAuthorization(t *testing.T) {
 			responseCheck(t, resp, false, constant.LimitExceededText)
 		})
 	}
+}
 
+func TestBucketReset(t *testing.T) {
 	resetBucketTest := []struct {
 		name       string
 		senderData senderCred
@@ -244,7 +130,156 @@ func TestAuthorization(t *testing.T) {
 			require.NoError(t, err)
 			responseCheck(t, resp, true, constant.BucketResetText)
 
-			resp = simulateRequestWithContext(t, app.Authorization, authData)
+			resp = simulateAuthRequestWithContext(t, app.Authorization, authData, false)
+			responseCheck(t, resp, true, constant.AuthAllowedText)
+		})
+	}
+}
+
+func TestWhiteBlackListDetection(t *testing.T) {
+	whiteBlackIPsTests := []struct {
+		name           string
+		senderData     senderCred
+		limits         bruteForceLimits
+		expectedResult bool
+		message        string
+	}{
+		{
+			name:           "detect IP in white list subnets",
+			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
+			limits:         getDefaultRequestLimits(),
+			expectedResult: true,
+			message:        constant.WhiteListIPText,
+		},
+		{
+			name:           "detect IP in black list subnets",
+			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
+			limits:         getDefaultRequestLimits(),
+			expectedResult: false,
+			message:        constant.BlackListIPText,
+		},
+	}
+
+	for _, wbIPstest := range whiteBlackIPsTests {
+		t.Run(wbIPstest.name, func(t *testing.T) {
+			resetAppContext(app, storage, wbIPstest.senderData, wbIPstest.limits)
+			defer finalizeApp(storage)
+
+			authData := &api.AuthRequest{
+				Login:    wbIPstest.senderData.login,
+				Password: wbIPstest.senderData.password,
+				Ip:       wbIPstest.senderData.ip,
+			}
+
+			resp := simulateAuthRequestWithContext(t, app.Authorization, authData, false)
+			responseCheck(t, resp, wbIPstest.expectedResult, wbIPstest.message)
+		})
+	}
+}
+
+func TestAddingExistingSubnet(t *testing.T) {
+	reserveSubnetsTests := []struct {
+		name              string
+		subnet            string
+		reserveSubnetFunc func(context.Context, *api.SubnetRequest) (*api.StatusResponse, error)
+		message           string
+	}{
+		{
+			name:              "can't add subnet to white list when it already exist in black list",
+			subnet:            getBlackListSubnets()[0],
+			reserveSubnetFunc: app.AddWhiteListIP,
+			message:           constant.ExistInBlackListErr,
+		},
+		{
+			name:              "can't add subnet to black list when it already exist in white list",
+			subnet:            getWhiteListSubnets()[0],
+			reserveSubnetFunc: app.AddBlackListIP,
+			message:           constant.ExistInWhiteListErr,
+		},
+	}
+	for _, rstest := range reserveSubnetsTests {
+		t.Run(rstest.name, func(t *testing.T) {
+			defer finalizeApp(storage)
+
+			subnet := &api.SubnetRequest{
+				Cidr: rstest.subnet,
+			}
+			resp, err := rstest.reserveSubnetFunc(context.Background(), subnet)
+			require.NoError(t, err)
+			responseCheck(t, resp, false, rstest.message)
+		})
+	}
+}
+
+func TestWhiteBlackListManaging(t *testing.T) {
+	manageWhiteBlackListTest := []struct {
+		name           string
+		listType       string
+		senderData     senderCred
+		limits         bruteForceLimits
+		expectedResult bool
+		message        string
+	}{
+		{
+			name:           "white list add operation/remove operation",
+			listType:       "white",
+			senderData:     getRandomAuthData(),
+			limits:         getDefaultRequestLimits(),
+			expectedResult: true,
+			message:        constant.WhiteListIPText,
+		},
+		{
+			name:           "black list add operation/remove operation",
+			listType:       "black",
+			senderData:     getRandomAuthData(),
+			limits:         getDefaultRequestLimits(),
+			expectedResult: false,
+			message:        constant.BlackListIPText,
+		},
+	}
+
+	for _, wbltest := range manageWhiteBlackListTest {
+		t.Run(wbltest.name, func(t *testing.T) {
+			resetAppContext(app, storage, wbltest.senderData, wbltest.limits)
+			defer finalizeApp(storage)
+
+			authData := &api.AuthRequest{
+				Login:    wbltest.senderData.login,
+				Password: wbltest.senderData.password,
+				Ip:       wbltest.senderData.ip,
+			}
+
+			subnet := &api.SubnetRequest{
+				Cidr: wbltest.senderData.ip + "/" + randMask(),
+			}
+
+			switch wbltest.listType {
+			case "white":
+				resp, err := app.AddWhiteListIP(testCtx, subnet)
+				require.NoError(t, err)
+				responseCheck(t, resp, true, constant.WhiteSubnetAddedText)
+
+				resp = simulateAuthRequestWithContext(t, app.Authorization, authData, false)
+				responseCheck(t, resp, true, constant.WhiteListIPText)
+
+				resp, err = app.DeleteWhiteListIP(testCtx, subnet)
+				require.NoError(t, err)
+				responseCheck(t, resp, true, constant.WhiteSubnetRemovedText)
+				fmt.Println("removed")
+			case "black":
+				resp, err := app.AddBlackListIP(testCtx, subnet)
+				require.NoError(t, err)
+				responseCheck(t, resp, true, constant.BlackSubnetAddedText)
+
+				resp = simulateAuthRequestWithContext(t, app.Authorization, authData, false)
+				responseCheck(t, resp, false, constant.BlackListIPText)
+
+				resp, err = app.DeleteBlackListIP(testCtx, subnet)
+				require.NoError(t, err)
+				responseCheck(t, resp, true, constant.BlackSubnetRemovedText)
+			}
+			fmt.Println("checked")
+			resp := simulateAuthRequestWithContext(t, app.Authorization, authData, false)
 			responseCheck(t, resp, true, constant.AuthAllowedText)
 		})
 	}
@@ -260,12 +295,78 @@ func TestErrHandling(t *testing.T) {
 			Ip:       util.RandomIP(),
 		}
 
-		memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
-		resp, err := app.Authorization(context.Background(), authData)
-		memorystorage.RequestContextWG.Wait()
-		require.Error(t, err)
+		resp := simulateAuthRequestWithContext(t, app.Authorization, authData, true)
 		responseCheck(t, resp, false, "")
 	})
+}
+
+func TestAuthInvalidInput(t *testing.T) {
+	invalidInputTests := []struct {
+		name     string
+		login    string
+		password string
+		ip       string
+	}{
+		{
+			name:     "empty login",
+			login:    "",
+			password: util.RandomPassword(),
+			ip:       util.RandomPassword(),
+		},
+		{
+			name:     "empty password",
+			login:    util.RandomLogin(),
+			password: "",
+			ip:       util.RandomPassword(),
+		},
+		{
+			name:     "empty ip",
+			login:    util.RandomLogin(),
+			password: util.RandomPassword(),
+			ip:       "",
+		},
+	}
+	for _, intest := range invalidInputTests {
+		t.Run(intest.name, func(t *testing.T) {
+			defer finalizeApp(storage)
+
+			auth := &api.AuthRequest{
+				Login:    intest.login,
+				Password: intest.password,
+				Ip:       intest.ip,
+			}
+			resp, err := app.Authorization(context.Background(), auth)
+			require.NoError(t, err)
+			responseCheck(t, resp, false, constant.ModelVlidationErr)
+		})
+	}
+}
+
+func TestAuthWithInvalidIPFormat(t *testing.T) {
+	defer finalizeApp(storage)
+
+	authData := &api.AuthRequest{
+		Login:    util.RandomLogin(),
+		Password: util.RandomPassword(),
+		Ip:       "invalid IP format",
+	}
+
+	resp := simulateAuthRequestWithContext(t, app.Authorization, authData, true)
+	require.Equal(t, false, resp.Success)
+}
+
+func TestReservationWithInvalidISubnetFormat(t *testing.T) {
+	subnet := &api.SubnetRequest{
+		Cidr: "invalid subnet format",
+	}
+
+	resp, err := app.AddBlackListIP(context.Background(), subnet)
+	require.Error(t, err)
+	require.Equal(t, false, resp.Success)
+
+	resp, err = app.AddWhiteListIP(context.Background(), subnet)
+	require.Error(t, err)
+	require.Equal(t, false, resp.Success)
 }
 
 func responseCheck(t *testing.T, resp *api.StatusResponse, expectedResult bool, msg string) {
@@ -279,10 +380,10 @@ func makeExtraRequestForBruteFroce(t *testing.T,
 ) *api.StatusResponse {
 	t.Helper()
 	for i := 0; i < requestCount; i++ {
-		resp := simulateRequestWithContext(t, app.Authorization, authData)
+		resp := simulateAuthRequestWithContext(t, app.Authorization, authData, false)
 		require.Equal(t, true, resp.Success)
 	}
-	return simulateRequestWithContext(t, app.Authorization, authData)
+	return simulateAuthRequestWithContext(t, app.Authorization, authData, false)
 }
 
 func resetAppContext(app *App, storage *memorystorage.MemoryStorage, s senderCred, limits bruteForceLimits) {
@@ -302,15 +403,20 @@ func finalizeApp(storage *memorystorage.MemoryStorage) {
 	storage.ResetDoneContext()
 }
 
-func simulateRequestWithContext(t *testing.T,
+func simulateAuthRequestWithContext(t *testing.T,
 	f func(context.Context, *api.AuthRequest) (*api.StatusResponse, error),
 	login *api.AuthRequest,
+	isErrorReqeust bool,
 ) *api.StatusResponse {
 	t.Helper()
 	memorystorage.RequestContextWG.Add(constant.AttackTypesCount)
 	ctx := context.Background()
 	resp, err := f(ctx, login)
-	require.NoError(t, err)
+	if isErrorReqeust {
+		require.Error(t, err)
+	} else {
+		require.NoError(t, err)
+	}
 	memorystorage.RequestContextWG.Wait()
 	return resp
 }
@@ -322,9 +428,6 @@ func getRandomAuthData() senderCred {
 func getDefaultRequestLimits() bruteForceLimits {
 	return bruteForceLimits{_allowRequestsCount, _allowRequestsCount, _allowRequestsCount}
 }
-
-// TODO: добавіть проверку, что ми не можем доабвлять в black list то, что уже есть white list
-// check heighlited coverage
 
 func randWhiteIP() string {
 	whiteSubnets := getWhiteListSubnets()

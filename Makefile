@@ -19,8 +19,11 @@ build-cli:
 run: build
 	$(BIN_BF_PROTECTOR) -config ./configs/bf-protector_config.toml -lists ./assets/
 
-test:
-	go test -v -count=1 -race -timeout=10s ./internal/app
+clean-cache:
+	go clean -cache
+
+test: clean-cache
+	go test -v -count=5 -race -timeout=10s ./internal/app
 
 run-integration-tests:
 	cd deployments; docker-compose -f docker-compose.yml -f docker-compose.test.yml up \

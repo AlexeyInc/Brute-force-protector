@@ -18,9 +18,9 @@ func resetCmd() *cobra.Command {
 	resetCmd := &cobra.Command{
 		Use:   "reset",
 		Short: "Resets bucket(s)",
-		Long:  `...`,
+		Long:  `example: bg-cli reset (your login) (your ip)`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("reset called")
+			fmt.Println("reset reqeust...")
 
 			if len(args) < 2 {
 				fmt.Println("please provide in args 'login' and 'ip'")

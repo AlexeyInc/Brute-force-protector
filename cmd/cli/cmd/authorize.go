@@ -17,10 +17,9 @@ import (
 var authorizeCmd = &cobra.Command{
 	Use:   "authorize",
 	Short: "authorization check",
-	Long:  `...`,
+	Long:  `example: bg-cli authorize (your login) (your password) (your ip)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO remove
-		fmt.Println("authorize called")
+		fmt.Println("authorize request...")
 
 		if len(args) < 3 {
 			fmt.Println("please provide in args: 'login', 'password' and 'ip'")

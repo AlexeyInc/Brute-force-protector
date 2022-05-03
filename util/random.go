@@ -1,6 +1,5 @@
 package util
 
-// TODO: change math/crypto...
 import (
 	"crypto/rand"
 	"encoding/binary"

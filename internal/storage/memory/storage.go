@@ -23,8 +23,6 @@ type MemoryStorage struct {
 
 var ContextDoneCh = make(chan struct{})
 
-// TODO: upload from assets seed
-
 func New(conf bfprotectorconfig.Config) *MemoryStorage {
 	return &MemoryStorage{
 		config:        conf,
@@ -91,6 +89,8 @@ func (ms *MemoryStorage) CheckBruteForce(context context.Context,
 }
 
 func (ms *MemoryStorage) IsReservedIP(ctx context.Context, key, ip string) (bool, error) {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
 	subnets, exists := ms.BlackWhiteIPs[key]
 	if !exists {
 		return false, fmt.Errorf("%s", constant.DBSubnetsErr)
@@ -170,6 +170,8 @@ func (ms *MemoryStorage) RemoveFromReservedSubnets(context context.Context, key 
 }
 
 func (ms *MemoryStorage) GetReservedSubnets(context context.Context, key string) ([]string, error) {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
 	ips, ok := ms.BlackWhiteIPs[key]
 	if !ok {
 		return nil, fmt.Errorf("key not exist")

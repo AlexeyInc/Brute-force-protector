@@ -33,10 +33,9 @@ func New(config protectorconfig.Config, storage Storage) *App {
 	}
 }
 
-// TODO: add unit test for check empty request model.
 func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.StatusResponse, error) {
 	if !login.IsValid() {
-		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+		return responseModel(false, constant.ModelVlidationErr, nil)
 	}
 
 	isWhiteListIP, err := a.storage.IsReservedIP(ctx, constant.WhiteSubnetsKey, login.Ip)
@@ -103,9 +102,6 @@ func (a *App) Authorization(ctx context.Context, login *api.AuthRequest) (*api.S
 }
 
 func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) (*api.StatusResponse, error) {
-	// if !bucket.IsValid() {
-	// 	return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
-	// }
 	if bucket.GetIp() != "" {
 		if err := a.storage.ResetBucket(ctx, bucket.Ip); err != nil {
 			return responseModel(false, "", fmt.Errorf("%s: %w", constant.ResetBucketErr, err))
@@ -128,12 +124,9 @@ func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
 	}
-	existInBlackList, err := a.alreadyReserved(ctx, constant.BlackSubnetsKey, ipv4Net)
-	if err != nil {
-		return responseModel(false, "", err)
-	}
-	if existInBlackList {
-		return responseModel(false, constant.ExistInBlackListErr, nil)
+	resp, err := a.createResponseIfAlreadyReserved(ctx, ipv4Net)
+	if resp != nil {
+		return resp, err
 	}
 	if err = a.storage.AddToReservedSubnets(ctx, constant.WhiteSubnetsKey, ipv4Net.String()); err != nil {
 		return responseModel(false, "", err)
@@ -155,24 +148,17 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	return responseModel(true, constant.WhiteSubnetRemovedText, nil)
 }
 
-// TODO - add is in white list check
-// - can't reserve the same
-// - can't remove non existing
-
 func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
-		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
+		return responseModel(false, constant.ModelVlidationErr, nil)
 	}
 	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr) // TODO add to cli
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
 	}
-	existInWhiteList, err := a.alreadyReserved(ctx, constant.WhiteSubnetsKey, ipv4Net)
-	if err != nil {
-		return responseModel(false, "", err)
-	}
-	if existInWhiteList {
-		return responseModel(false, constant.ExistInWhiteListErr, nil)
+	resp, err := a.createResponseIfAlreadyReserved(ctx, ipv4Net)
+	if resp != nil {
+		return resp, err
 	}
 	if err := a.storage.AddToReservedSubnets(ctx, constant.BlackSubnetsKey, ipv4Net.String()); err != nil {
 		return responseModel(false, "", err)
@@ -194,12 +180,30 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	return responseModel(true, constant.BlackSubnetRemovedText, nil)
 }
 
-func (a *App) alreadyReserved(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
-	blackSubnets, err := a.storage.GetReservedSubnets(ctx, key)
+func (a *App) createResponseIfAlreadyReserved(ctx context.Context, ipv4Net *net.IPNet) (*api.StatusResponse, error) {
+	existInBlackList, err := a.isExistInList(ctx, constant.BlackSubnetsKey, ipv4Net)
+	if err != nil {
+		return responseModel(false, "", err)
+	}
+	if existInBlackList {
+		return responseModel(false, constant.ExistInBlackListErr, nil)
+	}
+	existInWhiteList, err := a.isExistInList(ctx, constant.WhiteSubnetsKey, ipv4Net)
+	if err != nil {
+		return responseModel(false, "", err)
+	}
+	if existInWhiteList {
+		return responseModel(false, constant.ExistInWhiteListErr, nil)
+	}
+	return nil, nil
+}
+
+func (a *App) isExistInList(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
+	subnets, err := a.storage.GetReservedSubnets(ctx, key)
 	if err != nil {
 		return false, err
 	}
-	for _, v := range blackSubnets {
+	for _, v := range subnets {
 		if v == ipv4Net.String() {
 			return true, nil
 		}
@@ -221,8 +225,3 @@ func responseModel(succes bool, msg string, err error) (*api.StatusResponse, err
 		Msg:     msg,
 	}, err
 }
-
-// TODO: add secription in readme that program don't contain any login about
-// interception of white and blck list
-// It may sound like white list has hirst priority
-// IN order to add some ips to black list, firstly -- you should remove from white list

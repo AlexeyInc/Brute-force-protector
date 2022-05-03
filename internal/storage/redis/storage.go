@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
@@ -17,7 +16,6 @@ import (
 const _strictRateLimit = 1
 
 type Storage struct {
-	sync.Mutex
 	rdb     *redis.Client
 	limiter *redis_rate.Limiter
 	Source  string
