@@ -5,6 +5,7 @@
 - Authorization check
 - Bucket reset
 - Add/Remove IPNet to white/black lists
+- Predefined white and black subnets in assets folder
 
 ## How launch project: 
 
