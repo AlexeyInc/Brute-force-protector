@@ -32,5 +32,5 @@ CLI have 3 main commands:
 ### Possible improvements:
 
 __White/black lists check order__. <br /> Current solution have concrete order of checks on "does IP exist in white/black subnets lists". Firstly, we check white list, then black list.  <br />
-So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list.* 
+So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list. 
 
