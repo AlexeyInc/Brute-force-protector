@@ -23,8 +23,8 @@ CLI have 3 main commands:
 
 - cmd `authorize` take 3 params which represents login, password and ip <br />
 - cmd `reset` take 2 params which represent login and ip (to skip some param pass empty string «» insted) <br />
-- cmd `reserve` have 2 flags: `--action` (value: **add** or **remove**) and `--list` (value: **white** or **black**). <br />
-(Without any flags by default command `bf-cli reserve (your subenet)` will automatically try to add subnet to white list)
+- cmd `reserve` have 2 flags: `--action` (value: **add** or **remove**) and `--list` (value: **white** or **black**). 
+(Without any flags by default command `reserve (your subenet)` will automatically try to add subnet to white list)
 
 #### Example of commands: 
 	bf-cli authorize SomeLogin pass123 123.123.123.111
