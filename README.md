@@ -11,7 +11,7 @@
 Command `make run` will automatically download all nessesarry dependencies and launch the project in docker container. <br />
 Command `make stop` will remove all project containers from docker environment. <br />
 Command `make test` will launch unit tests <br />
-Command `make integration-tests` will launch the project, run integration tests and clear all docker containers after tests is done. <br />
+Command `make integration-test` will launch the project, run integration tests and clear all docker containers after tests is done. <br />
 
 ## How to use CLI:
 
