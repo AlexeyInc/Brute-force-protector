@@ -1,7 +1,7 @@
 # Brute-force-protector
 ### The service is designed to protect from brute force attack during authorization in any system. 
 
-## Program use cases: 
+### Program use cases: 
 **Authorization check, Bucket reset, Add/Remove IPNet to white/black lists**
 
 ## How launch project: 
