@@ -22,13 +22,13 @@ CLI have 3 main commands:
 - cmd `reserve` have 2 flags: `--action` (value: **add** or **remove**) and `--list` (value: **white** or **black**). <br />
 (Without any flags by default command `bf-cli reserve (your subenet)` will automatically try to add subnet to white list)
 
-### Example of commands: 
+#### Example of commands: 
 	bf-cli authorize SomeLogin pass123 123.123.123.111
 	bf-cli reset SomeLogin «»
 	bf-cli reserve -a=add -l=black 100.100.0.0/16
 
 ##### Possible improvements:
 
-White/black lists check order. Current solution have concrete order of checks on existing IP in white/black subnets lists. Firstly, we check white list, then black list. 
-So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list. 
+*White/black lists check order. Current solution have concrete order of checks on existing IP in white/black subnets lists. Firstly, we check white list, then black list. 
+So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list.* 
 
