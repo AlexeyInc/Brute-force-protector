@@ -211,7 +211,8 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 // 	return false, nil
 // }
 
-func (a *App) createRespIfAlreadyUsed(ctx context.Context, key string, inputSubnet *net.IPNet) (*api.StatusResponse, error) {
+func (a *App) createRespIfAlreadyUsed(ctx context.Context,
+	key string, inputSubnet *net.IPNet) (*api.StatusResponse, error) {
 	var whiteSubnets, blackSubnets []string
 	var err error
 	if whiteSubnets, err = a.storage.GetReservedSubnets(ctx, constant.WhiteSubnetsKey); err != nil {
