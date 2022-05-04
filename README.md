@@ -1,5 +1,5 @@
 # Brute-force-protector
-##### The service is designed to protect from brute force attack during authorization in any system
+#### The service is designed to protect from brute force attack during authorization in any system
 
 Program use cases: 
 
@@ -30,5 +30,6 @@ cmd `reserve` have 2 flags `action` (value: 'add' or 'remove') and `list` (value
 
 ##### Possible improvements:
 
-	White/black lists check order. Current solution have concrete order of checks on existing IP in white/black subnets lists. Firstly, we check white list, then black list. So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list. 
+White/black lists check order. Current solution have concrete order of checks on existing IP in white/black subnets lists. Firstly, we check white list, then black list. 
+So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list. 
 
