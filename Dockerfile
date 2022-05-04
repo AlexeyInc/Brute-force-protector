@@ -21,6 +21,9 @@ COPY --from=build ${BIN_FILE} ${BIN_FILE}
 ENV CONFIG_FILE /config/config.toml
 COPY ./configs/bf-protector_config.toml ${CONFIG_FILE}
 
+ENV LOG_FILE /log/logs.log
+COPY ./log/logs.log ${LOG_FILE}
+
 EXPOSE 8081
 
-CMD ${BIN_FILE} -config ${CONFIG_FILE}
+CMD ${BIN_FILE} -config ${CONFIG_FILE} -log ${LOG_FILE}

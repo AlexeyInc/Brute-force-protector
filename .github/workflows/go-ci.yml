@@ -23,7 +23,7 @@ jobs:
         run: go build -v ./...
 
       - name: Unit tests
-        run: go test -v -count=3 -race -timeout=30s ./internal/app
+        run: go test -v -race -timeout=30s ./internal/app
 
   lint:
     runs-on: ubuntu-latest

@@ -12,17 +12,17 @@ import (
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	protectorapp "github.com/AlexeyInc/Brute-force-protector/internal/app"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
+	"github.com/AlexeyInc/Brute-force-protector/internal/logger"
 	grpcserver "github.com/AlexeyInc/Brute-force-protector/internal/server"
 	redistorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
 	convert "github.com/AlexeyInc/Brute-force-protector/util"
 )
 
-var configFile, whiteBlackListFile string // , logFile string
+var configFile, logFile string
 
 func init() {
 	flag.StringVar(&configFile, "config", "../../configs/bf-protector_config.toml", "Path to configuration file")
-	flag.StringVar(&whiteBlackListFile, "lists", "../../assets/", "Path to white/black list files folder")
-	// flag.StringVar(&logFile, "log", "../../log/logs.log", "Path to log file")
+	flag.StringVar(&logFile, "log", "../../log/logs.log", "Path to log file")
 }
 
 func main() {
@@ -34,27 +34,33 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	storage := redistorage.New(config)
+	zapLogg := logger.New(logFile)
+	defer zapLogg.ZapLogger.Sync()
+
+	storage := redistorage.New(config, zapLogg)
 	if err := storage.Connect(ctx); err != nil {
-		fmt.Println(constant.DBConnectionErr, err.Error())
+		zapLogg.Info(fmt.Sprintf("%s: %s", constant.DBConnectionErr, err.Error()))
 		cancel()
 		return
 	}
-	fmt.Println("Successfully connected to redis database!")
+	zapLogg.Info("Successfully connected to redis database!")
 	defer storage.Close()
 
 	err = seedDatabase(ctx, storage)
 	if err != nil {
-		fmt.Println(constant.DatabaseSeedErr, err.Error())
+		zapLogg.Info(fmt.Sprintf("%s: %s", constant.DatabaseSeedErr, err.Error()))
 		cancel()
 		return
 	}
-
 	protector := protectorapp.New(config, storage)
 
-	go grpcserver.RunGRPCServer(ctx, config, protector)
+	fmt.Println("Starting gRPC server...")
+
+	go grpcserver.RunGRPCServer(ctx, config, protector, zapLogg)
 
 	<-ctx.Done()
+
+	zapLogg.Info("All servers are stopped...")
 
 	fmt.Println("\nAll servers are stopped...")
 }

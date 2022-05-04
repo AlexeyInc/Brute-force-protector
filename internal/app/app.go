@@ -115,7 +115,6 @@ func (a *App) ResetBuckets(ctx context.Context, bucket *api.ResetBucketRequest) 
 	return responseModel(true, constant.BucketResetText, nil)
 }
 
-// add is in black list check.
 func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
 		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
@@ -152,7 +151,7 @@ func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	if !subnet.IsValid() {
 		return responseModel(false, constant.ModelVlidationErr, nil)
 	}
-	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr) // TODO add to cli
+	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr)
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
 	}

@@ -24,13 +24,12 @@ services:
     environment:
       STORAGE_SOURCE: "cache:6379"
       GRPCSERVER_HOST: "bf-protector-app"
-      STORAGE_PASSWORD: "secret123"
     ports:
       - "8081:8081"
     depends_on:
       cache:
         condition: service_healthy
-    command: ./app/bf-protector -config=/config/config.toml
+    command: ./app/bf-protector -config=/config/config.toml -log=/log/logs.log
     restart: on-failure
 
 volumes:

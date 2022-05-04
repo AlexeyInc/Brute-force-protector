@@ -15,17 +15,23 @@ import (
 
 const _strictRateLimit = 1
 
+type Logger interface {
+	Info(msg string)
+}
+
 type Storage struct {
 	rdb      *redis.Client
 	limiter  *redis_rate.Limiter
 	Source   string
 	Password string
+	Logger
 }
 
-func New(pc protectorconfig.Config) *Storage {
+func New(pc protectorconfig.Config, logger Logger) *Storage {
 	return &Storage{
 		Source:   pc.Storage.Source,
 		Password: pc.Storage.Password,
+		Logger:   logger,
 	}
 }
 
@@ -53,9 +59,13 @@ func (s *Storage) Seed(ctx context.Context, keys []string, values [][]string) er
 		return errors.New(constant.DatabaseSeedErr)
 	}
 	for i := 0; i < len(keys); i++ {
-		err := s.rdb.LPush(ctx, keys[i], values[i]).Err()
-		if err != nil {
-			return err
+		for _, v := range values[i] {
+			if _, _, err := net.ParseCIDR(v); err == nil {
+				err := s.rdb.LPush(ctx, keys[i], v).Err()
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -74,14 +84,15 @@ func (s *Storage) CheckBruteForce(ctx context.Context,
 		case <-ctx.Done():
 			return
 		default:
-			fmt.Println("check err:", err)
+			s.Logger.Info(fmt.Sprint("error during brute force check:", err))
+
 			errCh <- err
 			return
 		}
 	}
 
-	// TODO add logger and move lof inside it
-	fmt.Println("allowed:", res.Allowed > 0, "(For", key, "remain", res.Remaining, "attempts) ", time.Now())
+	s.Logger.Info(fmt.Sprint("allowed: ", res.Allowed > 0, " (For ", key, " remain ", res.Remaining, " attempts)"))
+
 	if res.Allowed == 0 {
 		select {
 		case <-ctx.Done():

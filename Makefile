@@ -16,29 +16,32 @@ build:
 build-cli:
 	go build -v -o $(BIN_BF_PROTECTOR_CLI) ./cmd/cli;
 
-run: build
-	$(BIN_BF_PROTECTOR) -config ./configs/bf-protector_config.toml -lists ./assets/
+run-local: build
+	$(BIN_BF_PROTECTOR) -config ./configs/bf-protector_config.toml -log ./log/logs.log
+
+redis-run:
+	docker run --name redis-test-instance -p 6379:6379 -e REDIS_PASSWORD=secret123 -d redis
 
 clean-cache:
 	go clean -cache
 
 test: clean-cache
-	go test -v -count=5 -race -timeout=10s ./internal/app
+	go test -v -race -timeout=10s ./internal/app
 
 run-integration-tests:
 	cd deployments; docker-compose -f docker-compose.yml -f docker-compose.test.yml up \
 		--exit-code-from integration_tests
 
-integration-tests: run-integration-tests
+integration-test: run-integration-tests
 	cd deployments; docker-compose down --remove-orphans
 
 grpc-gen:
 	cd api; buf generate
 
-up:
+run:
 	cd deployments; docker-compose up
 
-down:
+stop:
 	cd deployments; docker-compose down
 
-.PHONY: build build-cli grpc-gen test run run-cli up down integration-tests
+.PHONY: grpc-gen build build-cli run-local run-cli run stop test integration-test redis-run

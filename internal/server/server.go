@@ -2,7 +2,6 @@ package grpcserver
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
@@ -13,13 +12,10 @@ import (
 
 type Logger interface {
 	Info(msg string)
-	Error(msg string)
 }
 
-func RunGRPCServer(context context.Context, config protectorconfig.Config, app api.BruteForceProtectorServiceServer) {
-	gRPCServer := grpc.NewServer(
-	// grpc.UnaryInterceptor(bruteForceProtectorMiddleware()),
-	)
+func RunGRPCServer(context context.Context, config protectorconfig.Config, app api.BruteForceProtectorServiceServer, logger Logger) {
+	gRPCServer := grpc.NewServer()
 
 	api.RegisterBruteForceProtectorServiceServer(gRPCServer, app)
 
@@ -29,7 +25,7 @@ func RunGRPCServer(context context.Context, config protectorconfig.Config, app a
 	}
 
 	go func() {
-		fmt.Println("calendar gRPC server is running..")
+		logger.Info("calendar gRPC server is running...")
 
 		if err = gRPCServer.Serve(l); err != nil {
 			log.Fatal("can't run server: ", err)
@@ -39,5 +35,6 @@ func RunGRPCServer(context context.Context, config protectorconfig.Config, app a
 	<-context.Done()
 
 	gRPCServer.GracefulStop()
-	fmt.Println("gRPC server closed.")
+
+	logger.Info("gRPC server closed.")
 }
