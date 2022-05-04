@@ -23,6 +23,7 @@ var authorizeCmd = &cobra.Command{
 
 		if len(args) < 3 {
 			fmt.Println("please provide in args: 'login', 'password' and 'ip'")
+			return
 		}
 
 		conn, err := grpc.Dial(bfProtector.host, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -38,8 +39,8 @@ var authorizeCmd = &cobra.Command{
 		})
 		failOnError(err, constant.BfProtectorReqErr)
 
-		fmt.Println("Success: ", resp.Success)
-		fmt.Println("Msg: ", resp.Msg)
+		fmt.Println("Success:", resp.Success)
+		fmt.Println("Msg:", resp.Msg)
 	},
 }
 

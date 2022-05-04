@@ -27,6 +27,7 @@ func reserveCmd() *cobra.Command {
 
 			if len(args) < 1 {
 				fmt.Println("please provide in args 'ip'")
+				return
 			}
 
 			conn, err := grpc.Dial(bfProtector.host, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -62,8 +63,8 @@ func reserveCmd() *cobra.Command {
 				}
 			}
 
-			fmt.Println("Success: ", resp.Success)
-			fmt.Println("Msg: ", resp.Msg)
+			fmt.Println("Success:", resp.Success)
+			fmt.Println("Msg:", resp.Msg)
 		},
 	}
 

@@ -24,6 +24,7 @@ func resetCmd() *cobra.Command {
 
 			if len(args) < 2 {
 				fmt.Println("please provide in args 'login' and 'ip'")
+				return
 			}
 
 			conn, err := grpc.Dial(bfProtector.host, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -38,8 +39,8 @@ func resetCmd() *cobra.Command {
 			})
 			failOnError(err, constant.BfProtectorReqErr)
 
-			fmt.Println("Success: ", resp.Success)
-			fmt.Println("Msg: ", resp.Msg)
+			fmt.Println("Success:", resp.Success)
+			fmt.Println("Msg:", resp.Msg)
 		},
 	}
 	return resetCmd
