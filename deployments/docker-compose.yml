@@ -6,11 +6,9 @@ services:
     restart: unless-stopped
     ports:
       - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning 
-    # TODO add pass in config
-    # --requirepass secret123
+    command: redis-server --save 20 1 --loglevel warning --requirepass secret123
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli AUTH secret123", "redis-cli ping | grep PONG"]
       interval: 1s
       timeout: 3s
       retries: 5
@@ -26,7 +24,7 @@ services:
     environment:
       STORAGE_SOURCE: "cache:6379"
       GRPCSERVER_HOST: "bf-protector-app"
-      # STORAGE_PASSWORD: "secret123"
+      STORAGE_PASSWORD: "secret123"
     ports:
       - "8081:8081"
     depends_on:

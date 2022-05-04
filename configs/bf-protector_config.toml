@@ -5,7 +5,7 @@ network = "tcp"
 
 [STORAGE]
 source = "localhost:6379"
-# password="secret123"
+password="secret123"
 
 [ATTEMPTSLIMIT]
 loginRequestsMinute = 10

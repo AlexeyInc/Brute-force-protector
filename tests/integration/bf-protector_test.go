@@ -50,8 +50,13 @@ func (s *BFProtectorSuite) SetupSuite() {
 	if storageSource == "" {
 		storageSource = "localhost:6379"
 	}
+	storagePassword := os.Getenv("BFPROTECTOR_STORAGE_PASSWORD")
+	if storagePassword == "" {
+		storagePassword = "secret123"
+	}
 	s.storage = &redisdb.Storage{
-		Source: storageSource,
+		Source:   storageSource,
+		Password: storagePassword,
 	}
 	err = s.storage.Connect(s.ctx)
 	s.Require().NoError(err)

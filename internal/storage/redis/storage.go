@@ -16,21 +16,23 @@ import (
 const _strictRateLimit = 1
 
 type Storage struct {
-	rdb     *redis.Client
-	limiter *redis_rate.Limiter
-	Source  string
+	rdb      *redis.Client
+	limiter  *redis_rate.Limiter
+	Source   string
+	Password string
 }
 
 func New(pc protectorconfig.Config) *Storage {
 	return &Storage{
-		Source: pc.Storage.Source,
+		Source:   pc.Storage.Source,
+		Password: pc.Storage.Password,
 	}
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: s.Source,
-		// TODO: Add password
+		Addr:     s.Source,
+		Password: s.Password,
 	})
 
 	if _, err := rdb.Ping(ctx).Result(); err != nil {

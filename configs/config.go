@@ -14,7 +14,8 @@ type Config struct {
 }
 
 type StorageConf struct {
-	Source string
+	Source   string
+	Password string
 }
 
 type ServerConf struct {

@@ -8,6 +8,7 @@ services:
     environment:
       BFPROTECTOR_SERVER_ADDR: "bf-protector-app:8081"
       BFPROTECTOR_STORAGE_SOURCE: "cache:6379"
+      BFPROTECTOR_STORAGE_PASSWORD: "secret123"
     depends_on:
       bf-protector:
         condition: service_started
