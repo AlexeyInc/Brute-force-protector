@@ -2,7 +2,6 @@ package protectorapp
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -267,7 +266,6 @@ func TestWhiteBlackListManaging(t *testing.T) {
 				Password: wbltest.senderData.password,
 				Ip:       wbltest.senderData.ip,
 			}
-
 			subnet := &api.SubnetRequest{
 				Cidr: wbltest.senderData.ip + "/" + randMask(),
 			}
@@ -284,7 +282,6 @@ func TestWhiteBlackListManaging(t *testing.T) {
 				resp, err = app.DeleteWhiteListIP(testCtx, subnet)
 				require.NoError(t, err)
 				responseCheck(t, resp, true, constant.WhiteSubnetRemovedText)
-				fmt.Println("removed")
 			case "black":
 				resp, err := app.AddBlackListIP(testCtx, subnet)
 				require.NoError(t, err)
@@ -297,7 +294,6 @@ func TestWhiteBlackListManaging(t *testing.T) {
 				require.NoError(t, err)
 				responseCheck(t, resp, true, constant.BlackSubnetRemovedText)
 			}
-			fmt.Println("checked")
 			resp := simulateAuthRequestWithContext(t, app.Authorization, authData, false)
 			responseCheck(t, resp, true, constant.AuthAllowedText)
 		})
