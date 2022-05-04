@@ -27,7 +27,7 @@ linters:
     - gocyclo
     - godot
     - gofmt
-    - gofumpt
+    # - gofumpt
     - goheader
     - gomoddirectives
     - gomodguard
