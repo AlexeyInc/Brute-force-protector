@@ -18,6 +18,8 @@ const (
 	_allowRequestsCount = 5
 	_maskLen            = 3
 
+	_invalidIP                       = "invalid IP format"
+	_invalidSubnet                   = "invalid subnet format"
 	_netIntersepsExistingBlackSubnet = "0.0.3.0/24"
 	_netIntersepsExistingWhiteSubnet = "1.1.2.0/16"
 )
@@ -148,14 +150,14 @@ func TestWhiteBlackListDetection(t *testing.T) {
 		message        string
 	}{
 		{
-			name:           "detect IP in white list subnets",
+			name:           "detect IP in WHITE list subnets",
 			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randWhiteIP()},
 			limits:         getDefaultRequestLimits(),
 			expectedResult: true,
 			message:        constant.WhiteListIPText,
 		},
 		{
-			name:           "detect IP in black list subnets",
+			name:           "detect IP in BLACK list subnets",
 			senderData:     senderCred{util.RandomLogin(), util.RandomPassword(), randBlackIP()},
 			limits:         getDefaultRequestLimits(),
 			expectedResult: false,
@@ -189,26 +191,26 @@ func TestAddingExistingSubnet(t *testing.T) {
 	}{
 		// dublication test
 		{
-			name:              "can't add dublication subnet to white list",
+			name:              "can't add dublication subnet to WHITE list",
 			subnet:            getBlackListSubnets()[0],
 			reserveSubnetFunc: app.AddBlackListIP,
 			message:           constant.ExistInBlackListErr,
 		},
 		{
-			name:              "can't add dublication subnet to black list",
+			name:              "can't add dublication subnet to BLACK list",
 			subnet:            getWhiteListSubnets()[0],
 			reserveSubnetFunc: app.AddWhiteListIP,
 			message:           constant.ExistInWhiteListErr,
 		},
 		// intersection test
 		{
-			name:              "can't add subnet to white list which has an intersection with existing subnet in black list",
+			name:              "can't add subnet to WHITE list which has an intersection with existing subnet in BLACK list",
 			subnet:            _netIntersepsExistingBlackSubnet,
 			reserveSubnetFunc: app.AddWhiteListIP,
 			message:           constant.InterceptionBlackListErr,
 		},
 		{
-			name:              "can't add subnet to black list which has an intersection with existing subnet in white list",
+			name:              "can't add subnet to BLACK list which has an intersection with existing subnet in WHITE list",
 			subnet:            _netIntersepsExistingWhiteSubnet,
 			reserveSubnetFunc: app.AddBlackListIP,
 			message:           constant.InterceptionWhiteListErr,
@@ -238,7 +240,7 @@ func TestWhiteBlackListManaging(t *testing.T) {
 		message        string
 	}{
 		{
-			name:           "white list add operation/remove operation",
+			name:           "WHITE list add operation/remove operation",
 			listType:       "white",
 			senderData:     getRandomAuthData(),
 			limits:         getDefaultRequestLimits(),
@@ -246,7 +248,7 @@ func TestWhiteBlackListManaging(t *testing.T) {
 			message:        constant.WhiteListIPText,
 		},
 		{
-			name:           "black list add operation/remove operation",
+			name:           "BLACK list add operation/remove operation",
 			listType:       "black",
 			senderData:     getRandomAuthData(),
 			limits:         getDefaultRequestLimits(),
@@ -365,7 +367,7 @@ func TestAuthWithInvalidIPFormat(t *testing.T) {
 	authData := &api.AuthRequest{
 		Login:    util.RandomLogin(),
 		Password: util.RandomPassword(),
-		Ip:       "invalid IP format",
+		Ip:       _invalidIP,
 	}
 
 	resp := simulateAuthRequestWithContext(t, app.Authorization, authData, true)
@@ -374,7 +376,7 @@ func TestAuthWithInvalidIPFormat(t *testing.T) {
 
 func TestReservationWithInvalidISubnetFormat(t *testing.T) {
 	subnet := &api.SubnetRequest{
-		Cidr: "invalid subnet format",
+		Cidr: _invalidSubnet,
 	}
 
 	resp, err := app.AddBlackListIP(context.Background(), subnet)
