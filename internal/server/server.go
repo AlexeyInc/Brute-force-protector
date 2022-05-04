@@ -15,7 +15,8 @@ type Logger interface {
 }
 
 func RunGRPCServer(context context.Context,
-	config protectorconfig.Config, app api.BruteForceProtectorServiceServer, logger Logger) {
+	config protectorconfig.Config, app api.BruteForceProtectorServiceServer, logger Logger,
+) {
 	gRPCServer := grpc.NewServer()
 
 	api.RegisterBruteForceProtectorServiceServer(gRPCServer, app)
