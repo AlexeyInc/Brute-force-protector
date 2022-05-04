@@ -2,7 +2,9 @@
 ### The service is designed to protect from brute force attack during authorization in any system. 
 
 ### Program use cases: 
-**Authorization check, Bucket reset, Add/Remove IPNet to white/black lists**
+- Authorization check
+- Bucket reset
+- Add/Remove IPNet to white/black lists
 
 ## How launch project: 
 
@@ -29,6 +31,6 @@ CLI have 3 main commands:
 
 ### Possible improvements:
 
-> __White/black lists check order__. <br /> Current solution have concrete order of checks on "does IP exist in white/black subnets lists". Firstly, we check white list, then black list. 
-> So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list.* 
+__White/black lists check order__. <br /> Current solution have concrete order of checks on "does IP exist in white/black subnets lists". Firstly, we check white list, then black list.  <br />
+So if IP exist in some subnet from white list — we will allow sender to authorize and not check does this IP included in any of subnets from black list.* 
 
