@@ -202,13 +202,13 @@ func TestAddingExistingSubnet(t *testing.T) {
 		},
 		// intersection test
 		{
-			name:              "can't add subnet to white list when it has an intersection with existing subnet in black list",
+			name:              "can't add subnet to white list which has an intersection with existing subnet in black list",
 			subnet:            _netIntersepsExistingBlackSubnet,
 			reserveSubnetFunc: app.AddWhiteListIP,
 			message:           constant.InterceptionBlackListErr,
 		},
 		{
-			name:              "can't add subnet to black list when it has an intersection with existing subnet in white list",
+			name:              "can't add subnet to black list which has an intersection with existing subnet in white list",
 			subnet:            _netIntersepsExistingWhiteSubnet,
 			reserveSubnetFunc: app.AddBlackListIP,
 			message:           constant.InterceptionWhiteListErr,
