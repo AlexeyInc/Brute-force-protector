@@ -123,7 +123,7 @@ func (a *App) AddWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
 	}
-	resp, err := a.createResponseIfAlreadyReserved(ctx, ipv4Net)
+	resp, err := a.createRespIfAlreadyUsed(ctx, constant.WhiteSubnetsKey, ipv4Net)
 	if resp != nil {
 		return resp, err
 	}
@@ -155,7 +155,7 @@ func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*a
 	if err != nil {
 		return responseModel(false, "", fmt.Errorf("%s: %w", constant.SubnetParseErr, err))
 	}
-	resp, err := a.createResponseIfAlreadyReserved(ctx, ipv4Net)
+	resp, err := a.createRespIfAlreadyUsed(ctx, constant.BlackSubnetsKey, ipv4Net)
 	if resp != nil {
 		return resp, err
 	}
@@ -179,35 +179,90 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	return responseModel(true, constant.BlackSubnetRemovedText, nil)
 }
 
-func (a *App) createResponseIfAlreadyReserved(ctx context.Context, ipv4Net *net.IPNet) (*api.StatusResponse, error) {
-	existInBlackList, err := a.isExistInList(ctx, constant.BlackSubnetsKey, ipv4Net)
-	if err != nil {
+// func (a *App) createRespIfAlreadyUsed(ctx context.Context, ipv4Net *net.IPNet) (*api.StatusResponse, error) {
+// 	existInBlackList, err := a.isExistInList(ctx, constant.BlackSubnetsKey, ipv4Net)
+// 	if err != nil {
+// 		return responseModel(false, "", err)
+// 	}
+// 	if existInBlackList {
+// 		return responseModel(false, constant.ExistInBlackListErr, nil)
+// 	}
+// 	existInWhiteList, err := a.isExistInList(ctx, constant.WhiteSubnetsKey, ipv4Net)
+// 	if err != nil {
+// 		return responseModel(false, "", err)
+// 	}
+// 	if existInWhiteList {
+// 		return responseModel(false, constant.ExistInWhiteListErr, nil)
+// 	}
+// 	return nil, nil
+// }
+
+// func (a *App) isExistInList(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
+// 	subnets, err := a.storage.GetReservedSubnets(ctx, key)
+// 	if err != nil {
+// 		return false, err
+// 	}
+// 	for _, cidr := range subnets {
+// 		_, subnet, _ := net.ParseCIDR(cidr)
+// 		if netIntersect(subnet, ipv4Net) {
+// 			return true, nil
+// 		}
+// 	}
+// 	return false, nil
+// }
+
+func (a *App) createRespIfAlreadyUsed(ctx context.Context, key string, inputSubnet *net.IPNet) (*api.StatusResponse, error) {
+	var whiteSubnets, blackSubnets []string
+	var err error
+	if whiteSubnets, err = a.storage.GetReservedSubnets(ctx, constant.WhiteSubnetsKey); err != nil {
 		return responseModel(false, "", err)
 	}
-	if existInBlackList {
-		return responseModel(false, constant.ExistInBlackListErr, nil)
-	}
-	existInWhiteList, err := a.isExistInList(ctx, constant.WhiteSubnetsKey, ipv4Net)
-	if err != nil {
+	if blackSubnets, err = a.storage.GetReservedSubnets(ctx, constant.BlackSubnetsKey); err != nil {
 		return responseModel(false, "", err)
 	}
-	if existInWhiteList {
-		return responseModel(false, constant.ExistInWhiteListErr, nil)
+
+	switch key {
+	case constant.WhiteSubnetsKey:
+		if isSubnetsContain(whiteSubnets, inputSubnet) {
+			return responseModel(false, constant.ExistInWhiteListErr, nil)
+		}
+		if isSubnetsIntercept(blackSubnets, inputSubnet) {
+			return responseModel(false, constant.InterceptionBlackListErr, nil)
+		}
+	case constant.BlackSubnetsKey:
+		if isSubnetsContain(blackSubnets, inputSubnet) {
+			return responseModel(false, constant.ExistInBlackListErr, nil)
+		}
+		if isSubnetsIntercept(whiteSubnets, inputSubnet) {
+			return responseModel(false, constant.InterceptionWhiteListErr, nil)
+		}
+	default:
+		return responseModel(false, "", fmt.Errorf("key %s not exist", key))
 	}
 	return nil, nil
 }
 
-func (a *App) isExistInList(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
-	subnets, err := a.storage.GetReservedSubnets(ctx, key)
-	if err != nil {
-		return false, err
-	}
-	for _, v := range subnets {
-		if v == ipv4Net.String() {
-			return true, nil
+func isSubnetsContain(subnets []string, subnetToSearch *net.IPNet) bool {
+	for _, s := range subnets {
+		if s == subnetToSearch.String() {
+			return true
 		}
 	}
-	return false, nil
+	return false
+}
+
+func isSubnetsIntercept(subnets []string, subnetToCompare *net.IPNet) bool {
+	for _, s := range subnets {
+		_, subnet, _ := net.ParseCIDR(s)
+		if netIntersect(subnet, subnetToCompare) {
+			return true
+		}
+	}
+	return false
+}
+
+func netIntersect(n1, n2 *net.IPNet) bool {
+	return n2.Contains(n1.IP) || n1.Contains(n2.IP)
 }
 
 func getIPNetFromCIDR(cidr string) (*net.IPNet, error) {

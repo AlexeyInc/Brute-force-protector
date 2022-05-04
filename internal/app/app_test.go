@@ -17,6 +17,9 @@ import (
 const (
 	_allowRequestsCount = 5
 	_maskLen            = 3
+
+	_netIntersepsExistingBlackSubnet = "0.0.3.0/24"
+	_netIntersepsExistingWhiteSubnet = "1.1.2.0/16"
 )
 
 type senderCred struct {
@@ -184,17 +187,31 @@ func TestAddingExistingSubnet(t *testing.T) {
 		reserveSubnetFunc func(context.Context, *api.SubnetRequest) (*api.StatusResponse, error)
 		message           string
 	}{
+		// dublication test
 		{
-			name:              "can't add subnet to white list when it already exist in black list",
+			name:              "can't add dublication subnet to white list",
 			subnet:            getBlackListSubnets()[0],
-			reserveSubnetFunc: app.AddWhiteListIP,
+			reserveSubnetFunc: app.AddBlackListIP,
 			message:           constant.ExistInBlackListErr,
 		},
 		{
-			name:              "can't add subnet to black list when it already exist in white list",
+			name:              "can't add dublication subnet to black list",
 			subnet:            getWhiteListSubnets()[0],
-			reserveSubnetFunc: app.AddBlackListIP,
+			reserveSubnetFunc: app.AddWhiteListIP,
 			message:           constant.ExistInWhiteListErr,
+		},
+		// intersection test
+		{
+			name:              "can't add subnet to white list when it has an intersection with existing subnet in black list",
+			subnet:            _netIntersepsExistingBlackSubnet,
+			reserveSubnetFunc: app.AddWhiteListIP,
+			message:           constant.InterceptionBlackListErr,
+		},
+		{
+			name:              "can't add subnet to black list when it has an intersection with existing subnet in white list",
+			subnet:            _netIntersepsExistingWhiteSubnet,
+			reserveSubnetFunc: app.AddBlackListIP,
+			message:           constant.InterceptionWhiteListErr,
 		},
 	}
 	for _, rstest := range reserveSubnetsTests {
