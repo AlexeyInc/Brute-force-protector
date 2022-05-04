@@ -6,7 +6,7 @@
 
 ## How launch project: 
 
-Command `make up` will automatically download all nessesarry dependencies and launch the project in docker container. 
+Command `make up` will automatically download all nessesarry dependencies and launch the project in docker container.
 Command `make down` will remove all project containers from docker environment. 
 Command `make integration-tests` will launch the project, run integration tests and clear all docker containers after tests is done. 
 
