@@ -1,3 +1,5 @@
+![example workflow](https://github.com/AlexeyInc/Brute-force-protector/actions/workflows/go-ci.yml/badge.svg)
+
 # Brute-force-protector
 ### The service is designed to protect from brute force attack during authorization in any system. 
 
