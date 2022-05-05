@@ -30,7 +30,7 @@ test: clean-cache
 
 run-integration-tests:
 	cd deployments; docker-compose -f docker-compose.yml -f docker-compose.test.yml up \
-		--exit-code-from integration_tests
+		--exit-code-from bf-protector-test
 
 integration-test: run-integration-tests
 	cd deployments; docker-compose down --remove-orphans
