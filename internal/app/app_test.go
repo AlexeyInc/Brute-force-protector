@@ -2,6 +2,7 @@ package protectorapp
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -16,11 +17,14 @@ import (
 const (
 	_allowRequestsCount = 5
 	_maskLen            = 3
+	_ipv4Bytes          = 32
 
 	_invalidIP                       = "invalid IP format"
 	_invalidSubnet                   = "invalid subnet format"
 	_netIntersepsExistingBlackSubnet = "0.0.3.0/24"
 	_netIntersepsExistingWhiteSubnet = "1.1.2.0/16"
+	_whiteSubnetWithoutInteception   = "255.0.0.0"
+	_blackSubnetWithoutInteception   = "254.0.0.0"
 )
 
 type senderCred struct {
@@ -231,33 +235,37 @@ func TestAddingExistingSubnet(t *testing.T) {
 
 func TestWhiteBlackListManaging(t *testing.T) {
 	manageWhiteBlackListTest := []struct {
-		name           string
-		listType       string
-		senderData     senderCred
-		limits         bruteForceLimits
-		expectedResult bool
-		message        string
+		name             string
+		listType         string
+		senderData       senderCred
+		ovverideSenderIP string
+		limits           bruteForceLimits
+		expectedResult   bool
+		message          string
 	}{
 		{
-			name:           "WHITE list add operation/remove operation",
-			listType:       "white",
-			senderData:     getRandomAuthData(),
-			limits:         getDefaultRequestLimits(),
-			expectedResult: true,
-			message:        constant.WhiteListIPText,
+			name:             "WHITE list add operation/remove operation",
+			listType:         "white",
+			senderData:       getRandomAuthData(),
+			ovverideSenderIP: _whiteSubnetWithoutInteception,
+			limits:           getDefaultRequestLimits(),
+			expectedResult:   true,
+			message:          constant.WhiteListIPText,
 		},
 		{
-			name:           "BLACK list add operation/remove operation",
-			listType:       "black",
-			senderData:     getRandomAuthData(),
-			limits:         getDefaultRequestLimits(),
-			expectedResult: false,
-			message:        constant.BlackListIPText,
+			name:             "BLACK list add operation/remove operation",
+			listType:         "black",
+			senderData:       getRandomAuthData(),
+			ovverideSenderIP: _blackSubnetWithoutInteception,
+			limits:           getDefaultRequestLimits(),
+			expectedResult:   false,
+			message:          constant.BlackListIPText,
 		},
 	}
 
 	for _, wbltest := range manageWhiteBlackListTest {
 		t.Run(wbltest.name, func(t *testing.T) {
+			wbltest.senderData.ip = wbltest.ovverideSenderIP
 			resetAppContext(app, storage, wbltest.senderData, wbltest.limits)
 			defer finalizeApp(storage)
 
@@ -267,7 +275,7 @@ func TestWhiteBlackListManaging(t *testing.T) {
 				Ip:       wbltest.senderData.ip,
 			}
 			subnet := &api.SubnetRequest{
-				Cidr: wbltest.senderData.ip + "/" + randMask(),
+				Cidr: wbltest.senderData.ip + "/" + strconv.Itoa(_ipv4Bytes),
 			}
 
 			switch wbltest.listType {
@@ -386,6 +394,9 @@ func TestReservationWithInvalidISubnetFormat(t *testing.T) {
 
 func responseCheck(t *testing.T, resp *api.StatusResponse, expectedResult bool, msg string) {
 	t.Helper()
+	if expectedResult != resp.Success {
+		fmt.Println(resp.Msg + "<---")
+	}
 	require.Equal(t, expectedResult, resp.Success)
 	require.Equal(t, msg, resp.Msg)
 }
@@ -456,10 +467,6 @@ func randBlackIP() string {
 	randBlackSubnet := blackSubnets[util.RandomIntRange(0, int64(len(blackSubnets)-1))]
 	blackIP := randBlackSubnet[:len(randBlackSubnet)-_maskLen]
 	return blackIP
-}
-
-func randMask() string {
-	return strconv.Itoa(util.RandomInt(32))
 }
 
 func getWhiteListSubnets() []string {

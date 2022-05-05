@@ -26,7 +26,7 @@ clean-cache:
 	go clean -cache
 
 test: clean-cache
-	go test -v -race -timeout=10s ./internal/app
+	go test -v -count=2 -race -timeout=10s ./internal/app
 
 run-integration-tests:
 	cd deployments; docker-compose -f docker-compose.yml -f docker-compose.test.yml up \
