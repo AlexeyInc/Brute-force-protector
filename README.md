@@ -34,6 +34,6 @@ CLI have 3 main commands:
 	bf-cli reset SomeLogin «»
 	bf-cli reserve -a=add -l=black 100.100.0.0/16
 	
-> Tool for badges show codecoverage as 77%, but golang test says 86%
+> Tool for badges show code coverage 77%, but golang test says 86%
 > ![image](https://user-images.githubusercontent.com/29926552/167125757-ccf71fbd-7651-46c0-a250-ba2870dd6eab.png)
 
