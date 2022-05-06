@@ -34,4 +34,5 @@ CLI have 3 main commands:
 	bf-cli reset SomeLogin «»
 	bf-cli reserve -a=add -l=black 100.100.0.0/16
 	
+![image](https://user-images.githubusercontent.com/29926552/167132910-b10e8cde-dd14-4c12-851e-66420cd2ec28.png)
 
