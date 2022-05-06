@@ -149,7 +149,7 @@ func (a *App) DeleteWhiteListIP(ctx context.Context, subnet *api.SubnetRequest) 
 
 func (a *App) AddBlackListIP(ctx context.Context, subnet *api.SubnetRequest) (*api.StatusResponse, error) {
 	if !subnet.IsValid() {
-		return responseModel(false, constant.ModelVlidationErr, nil)
+		return responseModel(false, "", fmt.Errorf(constant.ModelVlidationErr))
 	}
 	ipv4Net, err := getIPNetFromCIDR(subnet.Cidr)
 	if err != nil {
@@ -178,38 +178,6 @@ func (a *App) DeleteBlackListIP(ctx context.Context, subnet *api.SubnetRequest) 
 	}
 	return responseModel(true, constant.BlackSubnetRemovedText, nil)
 }
-
-// func (a *App) createRespIfAlreadyUsed(ctx context.Context, ipv4Net *net.IPNet) (*api.StatusResponse, error) {
-// 	existInBlackList, err := a.isExistInList(ctx, constant.BlackSubnetsKey, ipv4Net)
-// 	if err != nil {
-// 		return responseModel(false, "", err)
-// 	}
-// 	if existInBlackList {
-// 		return responseModel(false, constant.ExistInBlackListErr, nil)
-// 	}
-// 	existInWhiteList, err := a.isExistInList(ctx, constant.WhiteSubnetsKey, ipv4Net)
-// 	if err != nil {
-// 		return responseModel(false, "", err)
-// 	}
-// 	if existInWhiteList {
-// 		return responseModel(false, constant.ExistInWhiteListErr, nil)
-// 	}
-// 	return nil, nil
-// }
-
-// func (a *App) isExistInList(ctx context.Context, key string, ipv4Net *net.IPNet) (bool, error) {
-// 	subnets, err := a.storage.GetReservedSubnets(ctx, key)
-// 	if err != nil {
-// 		return false, err
-// 	}
-// 	for _, cidr := range subnets {
-// 		_, subnet, _ := net.ParseCIDR(cidr)
-// 		if netIntersect(subnet, ipv4Net) {
-// 			return true, nil
-// 		}
-// 	}
-// 	return false, nil
-// }
 
 func (a *App) createRespIfAlreadyUsed(ctx context.Context,
 	key string, inputSubnet *net.IPNet,

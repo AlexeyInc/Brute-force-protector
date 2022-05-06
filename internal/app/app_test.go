@@ -2,7 +2,6 @@ package protectorapp
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -365,6 +364,26 @@ func TestAuthInvalidInput(t *testing.T) {
 	}
 }
 
+func TestInputModelValidation(t *testing.T) {
+	invalidModel := &api.SubnetRequest{}
+
+	resp, err := app.AddWhiteListIP(context.Background(), invalidModel)
+	require.Error(t, err)
+	responseCheck(t, resp, false, "")
+
+	resp, err = app.DeleteWhiteListIP(context.Background(), invalidModel)
+	require.Error(t, err)
+	responseCheck(t, resp, false, "")
+
+	resp, err = app.AddBlackListIP(context.Background(), invalidModel)
+	require.Error(t, err)
+	responseCheck(t, resp, false, "")
+
+	resp, err = app.DeleteBlackListIP(context.Background(), invalidModel)
+	require.Error(t, err)
+	responseCheck(t, resp, false, "")
+}
+
 func TestAuthWithInvalidIPFormat(t *testing.T) {
 	defer finalizeApp(storage)
 
@@ -394,9 +413,6 @@ func TestReservationWithInvalidISubnetFormat(t *testing.T) {
 
 func responseCheck(t *testing.T, resp *api.StatusResponse, expectedResult bool, msg string) {
 	t.Helper()
-	if expectedResult != resp.Success {
-		fmt.Println(resp.Msg + "<---")
-	}
 	require.Equal(t, expectedResult, resp.Success)
 	require.Equal(t, msg, resp.Msg)
 }
