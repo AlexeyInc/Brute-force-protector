@@ -1,6 +1,6 @@
 ![example workflow](https://github.com/AlexeyInc/Brute-force-protector/actions/workflows/go-ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/AlexeyInc/Brute-force-protector/branch/main/graph/badge.svg?token=38P1KBTAQM)](https://codecov.io/gh/AlexeyInc/Brute-force-protector)
-![https://www.linkedin.com/in/alexeyovs/]https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
+![https://www.linkedin.com/in/alexeyovs/](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)
 
 # Brute-force-protector
 ### The service is designed to protect from brute force attack during authorization in any system. 
