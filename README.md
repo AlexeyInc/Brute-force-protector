@@ -3,7 +3,6 @@
 &nbsp;[![Linkedin](https://i.stack.imgur.com/gVE0j.png) LinkedIn](https://www.linkedin.com/)
 &nbsp;
 
-(https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)
 
 # Brute-force-protector
 ### The service is designed to protect from brute force attack during authorization in any system. 
