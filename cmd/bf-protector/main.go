@@ -54,14 +54,13 @@ func main() {
 	}
 	protector := protectorapp.New(config, storage)
 
-	fmt.Println("Starting gRPC server...")
+	zapLogg.Info("Starting gRPC server...")
 
 	go grpcserver.RunGRPCServer(ctx, config, protector, zapLogg)
 
 	<-ctx.Done()
 
 	zapLogg.Info("All servers are stopped...")
-
 	fmt.Println("\nAll servers are stopped...")
 }
 
