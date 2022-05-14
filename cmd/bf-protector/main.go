@@ -15,7 +15,7 @@ import (
 	"github.com/AlexeyInc/Brute-force-protector/internal/logger"
 	grpcserver "github.com/AlexeyInc/Brute-force-protector/internal/server"
 	redistorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
-	convert "github.com/AlexeyInc/Brute-force-protector/util"
+	convert "github.com/AlexeyInc/Brute-force-protector/internal/util"
 )
 
 var configFile, logFile string
