@@ -7,8 +7,8 @@ package cmd
 import (
 	"fmt"
 
-	bfprotector "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
+	bfprotector "github.com/AlexeyInc/Brute-force-protector/pkg/grpc"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

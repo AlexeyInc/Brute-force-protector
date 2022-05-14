@@ -5,8 +5,8 @@ import (
 	"log"
 	"net"
 
-	api "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
+	api "github.com/AlexeyInc/Brute-force-protector/pkg/grpc"
 	"google.golang.org/grpc"
 )
 

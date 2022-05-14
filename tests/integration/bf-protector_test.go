@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	bfprotector "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	redisdb "github.com/AlexeyInc/Brute-force-protector/internal/storage/redis"
-	"github.com/AlexeyInc/Brute-force-protector/util"
+	"github.com/AlexeyInc/Brute-force-protector/internal/util"
+	bfprotector "github.com/AlexeyInc/Brute-force-protector/pkg/grpc"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

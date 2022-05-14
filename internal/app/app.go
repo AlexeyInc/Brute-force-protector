@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	api "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	protectorconfig "github.com/AlexeyInc/Brute-force-protector/configs"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
+	api "github.com/AlexeyInc/Brute-force-protector/pkg/grpc"
 )
 
 type App struct {

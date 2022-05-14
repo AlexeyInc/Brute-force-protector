@@ -1,0 +1,1 @@
+2022-05-14T14:28:29.188+0300	INFO	connection to database failed: cannot ping redis: dial tcp [::1]:6379: connect: connection refused

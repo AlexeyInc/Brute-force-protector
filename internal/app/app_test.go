@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"testing"
 
-	api "github.com/AlexeyInc/Brute-force-protector/api/protoc"
 	embed "github.com/AlexeyInc/Brute-force-protector/assets"
 	constant "github.com/AlexeyInc/Brute-force-protector/internal/constants"
 	memorystorage "github.com/AlexeyInc/Brute-force-protector/internal/storage/memory"
-	"github.com/AlexeyInc/Brute-force-protector/util"
+	"github.com/AlexeyInc/Brute-force-protector/internal/util"
+	api "github.com/AlexeyInc/Brute-force-protector/pkg/grpc"
 	"github.com/stretchr/testify/require"
 )
 
