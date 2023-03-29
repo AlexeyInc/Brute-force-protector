@@ -13,7 +13,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
         -ldflags "$LDFLAGS" \
         -o bf-protector cmd/bf-protector/*
 
-FROM alpine:3.14
+FROM alpine:3.16
 
 ENV BIN_FILE "/app/bf-protector"
 COPY --from=build ${BIN_FILE} ${BIN_FILE}
