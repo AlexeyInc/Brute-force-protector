@@ -1,5 +1,5 @@
 # Собираем в гошке
-FROM golang:1.17.8-alpine as build
+FROM golang:1.23.4-alpine as build
 
 WORKDIR /app
 COPY . .
